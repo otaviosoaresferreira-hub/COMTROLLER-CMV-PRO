@@ -208,6 +208,9 @@ function InventarioLocation() {
   // e (spread entre lotes ≥ 5%) ou (algum lote desvia ≥ 5% do ref).
   function isItemDivergent(item: StockItem): boolean {
     if (!item.shared_unit_enabled) return false;
+    // Itens de Peso Variável (ex.: hambúrguer artesanal) NUNCA disparam alerta —
+    // a variação de peso é esperada e o controle é por unidade.
+    if (item.weight_variable) return false;
     const ref = item.standard_weight_g > 0 ? item.standard_weight_g : item.avg_weight_g;
     if (ref <= 0) return false;
     const lots = batchesByItem[item.id] ?? [];
