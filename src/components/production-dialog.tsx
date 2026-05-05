@@ -63,6 +63,8 @@ interface Props {
   /** Se preenchido, o dialog abre em modo EDIÇÃO de uma produção existente.
    *  Ao confirmar, estorna os movimentos originais e relança os novos. */
   editMovementId?: string;
+  /** Pré-seleciona uma receita ao abrir (apenas modo criação). */
+  presetRecipeId?: string;
 }
 
 type ItemRow = {
@@ -140,6 +142,7 @@ export function ProductionDialog({
   triggerVariant = "default",
   triggerClassName,
   editMovementId,
+  presetRecipeId,
 }: Props) {
   const [openInternal, setOpenInternal] = useState(false);
   const open = openProp ?? openInternal;
@@ -369,7 +372,7 @@ export function ProductionDialog({
   // Reset on open (modo criação). Em modo edição, deixamos o efeito específico abaixo popular.
   useEffect(() => {
     if (open && !isEditMode) {
-      setRecipeId("");
+      setRecipeId(presetRecipeId ?? "");
       setLines([]);
       setYieldQty("");
       setYieldKg("");
@@ -388,7 +391,7 @@ export function ProductionDialog({
       userEditedUnRef.current = false;
       manualLineEditsRef.current.clear();
     }
-  }, [open, defaultLocationId, central, data, isEditMode]);
+  }, [open, defaultLocationId, central, data, isEditMode, presetRecipeId]);
 
   // Em modo edição: quando temos data + editData, encontra a receita pelo nome,
   // monta as linhas a partir dos movimentos production_out e preenche o rendimento.

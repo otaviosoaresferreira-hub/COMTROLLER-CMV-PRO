@@ -37,7 +37,12 @@ import {
   History,
   CalendarRange,
   Trash2,
+  AlertTriangle,
+  Timer,
+  XOctagon,
+  Settings2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useManagerMode } from "@/lib/manager-mode";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
@@ -129,6 +134,8 @@ function ProducaoPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("week");
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [coverageDays, setCoverageDays] = useState<number>(3);
+  const [presetRecipeId, setPresetRecipeId] = useState<string | null>(null);
 
   const deleteProduction = useMutation({
     mutationFn: async (movementId: string) => {
@@ -173,6 +180,120 @@ function ProducaoPage() {
       return { movs: movs.data, items: items.data, locs: locs.data, recipes: recipes.data };
     },
   });
+
+  // === Alertas inteligentes de produção ===
+  const { data: alertsData } = useQuery({
+    queryKey: ["producao-alerts"],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 14);
+      const [recipes, ingredients, stock, salesMovs, locs] = await Promise.all([
+        supabase
+          .from("recipes")
+          .select("id,name,produced_item_id,unit_weight_g,yield_unit")
+          .eq("is_active", true),
+        supabase.from("recipe_ingredients").select("recipe_id,item_id,quantity,unit"),
+        supabase.from("stock_levels").select("item_id,location_id,current_stock"),
+        supabase
+          .from("movements")
+          .select("item_id,quantity,created_at,type")
+          .eq("type", "sale")
+          .gte("created_at", since.toISOString()),
+        supabase.from("locations").select("id,name,is_system"),
+      ]);
+      if (recipes.error) throw recipes.error;
+      if (ingredients.error) throw ingredients.error;
+      if (stock.error) throw stock.error;
+      if (salesMovs.error) throw salesMovs.error;
+      if (locs.error) throw locs.error;
+      return {
+        recipes: recipes.data,
+        ingredients: ingredients.data,
+        stock: stock.data,
+        sales: salesMovs.data,
+        centralId:
+          locs.data.find(
+            (l) => l.is_system && l.name.toLowerCase().includes("central"),
+          )?.id ?? null,
+      };
+    },
+  });
+
+  const alerts = useMemo(() => {
+    if (!alertsData) return [];
+    const days = 14;
+    const salesByItem = new Map<string, number>();
+    for (const s of alertsData.sales) {
+      salesByItem.set(s.item_id, (salesByItem.get(s.item_id) ?? 0) + Number(s.quantity));
+    }
+    const totalStockByItem = new Map<string, number>();
+    const centralStockByItem = new Map<string, number>();
+    for (const s of alertsData.stock) {
+      totalStockByItem.set(
+        s.item_id,
+        (totalStockByItem.get(s.item_id) ?? 0) + Number(s.current_stock),
+      );
+      if (alertsData.centralId && s.location_id === alertsData.centralId) {
+        centralStockByItem.set(
+          s.item_id,
+          (centralStockByItem.get(s.item_id) ?? 0) + Number(s.current_stock),
+        );
+      }
+    }
+
+    type AlertCard = {
+      id: string;
+      kind: "urgent" | "warning" | "blocked";
+      title: string;
+      message: string;
+      recipeId: string;
+    };
+    const out: AlertCard[] = [];
+    for (const r of alertsData.recipes) {
+      if (!r.produced_item_id) continue;
+      const itemId = r.produced_item_id;
+      const totalSold = salesByItem.get(itemId) ?? 0;
+      const avgPerDay = totalSold / days;
+      if (avgPerDay <= 0) continue;
+      const currentStock = totalStockByItem.get(itemId) ?? 0;
+      const daysLeft = currentStock / avgPerDay;
+      if (daysLeft >= coverageDays) continue;
+
+      const ingr = alertsData.ingredients.filter((i) => i.recipe_id === r.id);
+      const missing = ingr.filter(
+        (i) => i.item_id && (centralStockByItem.get(i.item_id) ?? 0) <= 0,
+      );
+      const unit = (r.yield_unit ?? "un").toLowerCase();
+
+      if (missing.length > 0) {
+        out.push({
+          id: r.id + "-blocked",
+          kind: "blocked",
+          recipeId: r.id,
+          title: `Impossível produzir ${r.name}`,
+          message: `Faltam insumos no Estoque Central para fabricar ${r.name}.`,
+        });
+      } else if (daysLeft < 1) {
+        out.push({
+          id: r.id + "-urgent",
+          kind: "urgent",
+          recipeId: r.id,
+          title: `Produção urgente: ${r.name}`,
+          message: `Estoque ${currentStock.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${unit} · venda média ${avgPerDay.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}/dia.`,
+        });
+      } else {
+        out.push({
+          id: r.id + "-warn",
+          kind: "warning",
+          recipeId: r.id,
+          title: `Previsão de ruptura: ${r.name}`,
+          message: `Estoque deve durar ~${daysLeft.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dias com base no histórico.`,
+        });
+      }
+    }
+    const order = { blocked: 0, urgent: 1, warning: 2 } as const;
+    return out.sort((a, b) => order[a.kind] - order[b.kind]);
+  }, [alertsData, coverageDays]);
 
   const rows = useMemo(() => {
     if (!data) return [];
@@ -394,6 +515,93 @@ function ProducaoPage() {
           </div>
         </section>
 
+        {/* Alertas inteligentes de produção */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Alertas de produção
+              </p>
+              {alerts.length > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                  {alerts.length}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <label className="text-[11px] text-muted-foreground">Cobertura</label>
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={coverageDays}
+                onChange={(e) => setCoverageDays(Math.max(1, Number(e.target.value) || 1))}
+                className="h-7 w-16 text-xs tabular-nums"
+              />
+              <span className="text-[11px] text-muted-foreground">dias</span>
+            </div>
+          </div>
+
+          {alerts.length === 0 ? (
+            <div className="rounded-xl border border-border/60 bg-card/50 p-3 text-center text-xs text-muted-foreground">
+              Nenhum alerta. Estoques de produção dentro da cobertura desejada.
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {alerts.map((a) => {
+                const tone =
+                  a.kind === "blocked"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : a.kind === "urgent"
+                      ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200";
+                const Icon =
+                  a.kind === "blocked" ? XOctagon : a.kind === "urgent" ? AlertTriangle : Timer;
+                const label =
+                  a.kind === "blocked" ? "Bloqueado" : a.kind === "urgent" ? "Urgente" : "Aviso";
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => {
+                      if (a.kind === "blocked") {
+                        toast.warning(a.message);
+                        return;
+                      }
+                      setPresetRecipeId(a.recipeId);
+                    }}
+                    className={cn(
+                      "group flex items-start gap-3 rounded-xl border p-3 text-left shadow-sm transition active:scale-[0.99]",
+                      tone,
+                    )}
+                  >
+                    <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="h-4 border-current px-1.5 text-[9px] font-bold uppercase tracking-wide"
+                        >
+                          {label}
+                        </Badge>
+                        <p className="truncate text-sm font-semibold">{a.title}</p>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-snug opacity-90">{a.message}</p>
+                      <p className="mt-1 text-[10px] uppercase tracking-wide opacity-60">
+                        {a.kind === "blocked"
+                          ? "Verifique insumos no Estoque Central"
+                          : "Toque para iniciar produção"}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {/* Summary */}
         {isManager && filteredRows.length > 0 && (
           <section className="grid grid-cols-2 gap-3">
@@ -596,6 +804,17 @@ function ProducaoPage() {
           open={true}
           onOpenChange={(v) => {
             if (!v) setEditId(null);
+          }}
+        />
+      )}
+
+      {presetRecipeId && (
+        <ProductionDialog
+          presetRecipeId={presetRecipeId}
+          hideTrigger
+          open={true}
+          onOpenChange={(v) => {
+            if (!v) setPresetRecipeId(null);
           }}
         />
       )}
