@@ -611,18 +611,26 @@ export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDi
             ) : (
               unmapped.map((u) => (
                 <div
-                  key={u.source_name}
+                  key={u.source_code || u.display_name}
                   className="flex items-center gap-2 rounded-md border border-border bg-background p-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{u.source_name}</p>
+                    <div className="flex items-center gap-2">
+                      {u.source_code && (
+                        <Badge variant="outline" className="text-[10px] tabular-nums">
+                          #{u.source_code}
+                        </Badge>
+                      )}
+                      <p className="truncate text-sm font-medium">{u.display_name}</p>
+                    </div>
                     <p className="text-[10px] text-muted-foreground tabular-nums">
                       {u.qty.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} vendido(s)
+                      {u.revenue > 0 ? ` · ${fmtBRL(u.revenue)}` : ""}
                     </p>
                   </div>
                   <RecipePicker
                     recipes={data?.recipes ?? []}
-                    onPick={(rid) => linkUnmapped(u.source_name, u.qty, rid)}
+                    onPick={(rid) => linkUnmapped(u, rid)}
                   />
                 </div>
               ))
