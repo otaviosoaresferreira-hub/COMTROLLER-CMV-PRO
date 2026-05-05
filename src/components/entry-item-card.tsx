@@ -709,7 +709,7 @@ function FormulaInput({
   /** Texto secundário pequeno embaixo do label (ex.: "0,180 kg/un"). */
   hint?: string;
 }) {
-  const [focused, setFocused] = (require("react") as typeof import("react")).useState(false);
+  const [focused, setFocused] = useState(false);
   // Quando focado, mostra o valor cru (precisão total). Sem foco, aplica máscara.
   const display =
     focused || displayDecimals == null ? value : maskDec(value, displayDecimals);
