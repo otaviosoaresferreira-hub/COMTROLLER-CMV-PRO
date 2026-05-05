@@ -2351,6 +2351,7 @@ function ManualEntryTab({
           expiry_date: res.row.expiryDate || null,
           lot_number: res.row.lotNumber?.trim() || null,
           movement_id: mov?.id ?? null,
+          weight_variable_at_entry: res.sharedActive ? !!res.row.newWeightVariable : false,
           note: "Entrada manual",
         });
         if (eb) throw eb;
