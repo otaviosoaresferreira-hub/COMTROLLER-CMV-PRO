@@ -2043,50 +2043,17 @@ function RowEditor({
 // Manual Entry Tab — entrada em lote (múltiplos itens)
 // ============================================================
 
-type ManualRow = {
-  uid: string;
-  mode: "existing" | "new";
-  itemId: string;
-  pickerOpen: boolean;
-  // Novo item
-  newName: string;
-  newUnit: Unit;
-  newCategoryId: string;
-  newSharedEnabled: boolean;
-  newWeightVariable: boolean;
-  newStandardWeightG: string;
-  newContabilizaCmv: boolean;
-  // Quantidade / valores
-  quantity: string;
-  totalValue: string;
-  // Lote (Unidade Compartilhada)
-  sharedUnits: string;
-  sharedTotalKg: string;
-  // Lote — validade e identificação (opcionais)
-  expiryDate: string;
-  lotNumber: string;
-};
+import {
+  EntryItemCard,
+  makeBlankEntryCard,
+  computeEntryTotals,
+  type EntryCardData,
+} from "@/components/entry-item-card";
+
+type ManualRow = EntryCardData & { uid: string };
 
 function makeBlankManualRow(): ManualRow {
-  return {
-    uid: Math.random().toString(36).slice(2),
-    mode: "existing",
-    itemId: "",
-    pickerOpen: false,
-    newName: "",
-    newUnit: "UN",
-    newCategoryId: "",
-    newSharedEnabled: false,
-    newWeightVariable: false,
-    newStandardWeightG: "",
-    newContabilizaCmv: true,
-    quantity: "",
-    totalValue: "",
-    sharedUnits: "",
-    sharedTotalKg: "",
-    expiryDate: "",
-    lotNumber: "",
-  };
+  return { uid: Math.random().toString(36).slice(2), ...makeBlankEntryCard() };
 }
 
 function ManualEntryTab({
