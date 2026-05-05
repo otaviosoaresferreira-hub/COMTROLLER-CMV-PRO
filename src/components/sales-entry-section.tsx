@@ -278,7 +278,14 @@ export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDi
     return m;
   }, [data]);
 
-  // Index para lookup rápido por nome (lowercased).
+  // Index para lookup rápido por código (preferido) e por nome (fallback).
+  const mappingByCode = useMemo(() => {
+    const m = new Map<string, Mapping>();
+    data?.mappings.forEach((x) => {
+      if (x.external_code) m.set(String(x.external_code).trim().toLowerCase(), x);
+    });
+    return m;
+  }, [data]);
   const mappingByName = useMemo(() => {
     const m = new Map<string, Mapping>();
     data?.mappings.forEach((x) => m.set(x.source_name.trim().toLowerCase(), x));
