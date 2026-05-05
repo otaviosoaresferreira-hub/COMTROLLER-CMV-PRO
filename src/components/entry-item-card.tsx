@@ -579,6 +579,7 @@ export function EntryItemCard({
               onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
               step="0.001"
               suffix="kg"
+              displayDecimals={3}
             />
             <Op>=</Op>
             <FormulaInput
@@ -588,6 +589,12 @@ export function EntryItemCard({
               step="0.001"
               suffix="kg"
               highlight
+              displayDecimals={3}
+              hint={
+                parseDec(data.sharedUnits) > 0 && parseDec(data.sharedTotalKg) > 0
+                  ? `${(parseDec(data.sharedTotalKg) / parseDec(data.sharedUnits)).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
+                  : undefined
+              }
             />
           </div>
         ) : (
