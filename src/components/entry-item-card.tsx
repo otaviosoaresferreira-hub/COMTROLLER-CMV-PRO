@@ -195,6 +195,57 @@ export function computeEntryTotals(
   };
 }
 
+/**
+ * Calculadora bidirecional para o bloco SHARED:
+ * Qtd × Peso do Lote = Peso Total.
+ * Mantém os dois últimos campos editados como "âncoras" e recalcula o terceiro.
+ */
+export function applyBidirectional(
+  data: EntryCardData,
+  field: "units" | "lot" | "total",
+  rawValue: string,
+): Partial<EntryCardData> {
+  const patch: Partial<EntryCardData> = {};
+  if (field === "units") patch.sharedUnits = rawValue;
+  if (field === "lot") patch.newStandardWeightKg = rawValue;
+  if (field === "total") patch.sharedTotalKg = rawValue;
+
+  const prev = data.sharedLastEdited;
+  const newPrev = prev && prev !== field ? prev : data.sharedPrevEdited;
+  patch.sharedLastEdited = field;
+  patch.sharedPrevEdited = newPrev;
+
+  const valUnits =
+    field === "units" ? parseDec(rawValue) : parseDec(data.sharedUnits);
+  const valLot =
+    field === "lot" ? parseDec(rawValue) : parseDec(data.newStandardWeightKg);
+  const valTotal =
+    field === "total" ? parseDec(rawValue) : parseDec(data.sharedTotalKg);
+
+  // Os dois campos "âncora" são: o atual (field) e o newPrev.
+  const anchors = new Set<string>([field]);
+  if (newPrev) anchors.add(newPrev);
+
+  // Se temos exatamente os dois âncoras com valores, calcula o terceiro
+  if (anchors.size === 2) {
+    const target = (["units", "lot", "total"] as const).find((k) => !anchors.has(k));
+    if (target === "total" && valUnits > 0 && valLot > 0) {
+      patch.sharedTotalKg = (valUnits * valLot).toLocaleString("en-US", {
+        maximumFractionDigits: 3,
+        useGrouping: false,
+      });
+    } else if (target === "lot" && valUnits > 0 && valTotal > 0) {
+      patch.newStandardWeightKg = (valTotal / valUnits).toLocaleString("en-US", {
+        maximumFractionDigits: 4,
+        useGrouping: false,
+      });
+    } else if (target === "units" && valLot > 0 && valTotal > 0) {
+      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+    }
+  }
+  return patch;
+}
+
 interface Props {
   index: number;
   data: EntryCardData;
