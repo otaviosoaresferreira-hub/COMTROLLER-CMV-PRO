@@ -446,7 +446,7 @@ function InventarioLocation() {
       }
 
       if (divergences.length === 0) {
-        return { adjusted: 0, reconciled: reconciledItemIds.size, transferred: 0 };
+        return { adjusted: 0, reconciled: reconciledItemIds.size, transferred: 0, discrepanciesCreated: 0, auditsRequested: 0 };
       }
 
       // Pré-carrega saldos do Estoque Central para os itens com sobra (delta > 0).
