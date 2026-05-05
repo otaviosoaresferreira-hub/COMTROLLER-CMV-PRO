@@ -80,10 +80,11 @@ export type EntryCardData = {
   // Lote — Unidade Compartilhada
   sharedUnits: string;
   sharedTotalKg: string;
-  /** Último campo SHARED tocado pelo usuário ("units" | "lot" | "total"). */
-  sharedLastEdited?: "units" | "lot" | "total";
-  /** Penúltimo campo tocado — usado como segundo input no cálculo bidirecional. */
-  sharedPrevEdited?: "units" | "lot" | "total";
+  /**
+   * Peso por unidade DESTE LOTE (kg/un). Independente do Peso Base do cadastro.
+   * Em "Peso Fixo" fica travado no Peso Base. Em "Peso Variável" é livre.
+   */
+  lotWeightKg: string;
 
   // Rodapé
   expiryDate: string;
