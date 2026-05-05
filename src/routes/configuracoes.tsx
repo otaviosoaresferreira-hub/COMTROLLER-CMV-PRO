@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
-import {
-  useBranding,
-  BG_OPTIONS,
-  BTN_OPTIONS,
-  type BgTheme,
-  type BtnTheme,
-} from "@/lib/branding";
+import { useBranding, DEFAULT_PRIMARY, DEFAULT_BACKGROUND } from "@/lib/branding";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -176,82 +170,44 @@ function ConfiguracoesPage() {
         </CardContent>
       </Card>
 
-      {/* Temas */}
+      {/* Personalização de Cores */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Palette className="h-4 w-4" /> Temas
+            <Palette className="h-4 w-4" /> Personalização de Cores
           </CardTitle>
           <CardDescription>
-            As escolhas atualizam as cores globais do sistema instantaneamente.
+            Escolha cores personalizadas. O contraste do texto é ajustado automaticamente para garantir legibilidade.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Cor de Fundo</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {BG_OPTIONS.map((opt) => {
-                const active = branding.bgTheme === opt.key;
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => branding.update({ bgTheme: opt.key as BgTheme })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 rounded-lg border p-2 text-xs transition-all",
-                      active ? "border-primary ring-2 ring-primary/40" : "border-border hover:border-muted-foreground/40",
-                    )}
-                  >
-                    <span
-                      className="h-10 w-full rounded border border-border"
-                      style={{ background: opt.swatch }}
-                    />
-                    <span className="truncate">{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <ColorPickerRow
+            label="Cor Primária"
+            description="Botões, ícones ativos e destaques."
+            value={branding.primaryColor}
+            onChange={(hex) => branding.update({ primaryColor: hex })}
+          />
 
           <Separator />
 
-          <div>
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Cor dos Botões</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {BTN_OPTIONS.map((opt) => {
-                const active = branding.btnTheme === opt.key;
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => branding.update({ btnTheme: opt.key as BtnTheme })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 rounded-lg border p-2 text-xs transition-all",
-                      active ? "border-primary ring-2 ring-primary/40" : "border-border hover:border-muted-foreground/40",
-                    )}
-                  >
-                    <span
-                      className="h-10 w-full rounded border border-border"
-                      style={{ background: opt.swatch }}
-                    />
-                    <span className="truncate">{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <ColorPickerRow
+            label="Cor de Fundo"
+            description="Fundo das telas. Tons escuros ativam o modo escuro automaticamente."
+            value={branding.backgroundColor}
+            onChange={(hex) => branding.update({ backgroundColor: hex })}
+          />
 
           <Separator />
 
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Voltar para o tema padrão (Fundo Branco e Botões Verdes).
+              Voltar para o tema padrão (fundo branco com primária verde).
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                branding.update({ bgTheme: "branco", btnTheme: "verde" });
+                branding.update({ primaryColor: DEFAULT_PRIMARY, backgroundColor: DEFAULT_BACKGROUND });
                 toast.success("Tema padrão restaurado");
               }}
             >
@@ -295,3 +251,49 @@ function ConfiguracoesPage() {
     </div>
   );
 }
+
+interface ColorPickerRowProps {
+  label: string;
+  description?: string;
+  value: string;
+  onChange: (hex: string) => void;
+}
+
+function ColorPickerRow({ label, description, value, onChange }: ColorPickerRowProps) {
+  const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000";
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+      </div>
+      <div className="flex items-center gap-2">
+        <Input
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            onChange(v.startsWith("#") ? v : `#${v}`);
+          }}
+          className="h-9 w-28 font-mono text-xs uppercase"
+          maxLength={7}
+          placeholder="#000000"
+        />
+        <label
+          className={cn(
+            "relative inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border shadow-sm ring-offset-background transition hover:ring-2 hover:ring-primary/40",
+          )}
+          style={{ background: safe }}
+          title="Escolher cor"
+        >
+          <input
+            type="color"
+            value={safe}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+

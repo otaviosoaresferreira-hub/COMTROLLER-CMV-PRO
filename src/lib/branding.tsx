@@ -3,29 +3,32 @@ import defaultLogo from "@/assets/logo-controller-cmv-pro.png";
 
 export const DEFAULT_LOGO_URL = defaultLogo;
 
-export type BgTheme = "branco" | "preto" | "cinza-claro" | "cinza-escuro" | "azul-marinho" | "azul-oceano";
-export type BtnTheme = "verde" | "azul" | "laranja" | "preto" | "branco" | "cinza";
-
 export interface BrandingState {
   fantasyName: string;
   legalName: string;
   cnpj: string;
   logoDataUrl: string | null;
-  bgTheme: BgTheme;
-  btnTheme: BtnTheme;
+  /** Cor primária (botões, ícones ativos, destaques) — hex */
+  primaryColor: string;
+  /** Cor de fundo das telas — hex */
+  backgroundColor: string;
 }
+
+export const DEFAULT_PRIMARY = "#16a34a"; // verde
+export const DEFAULT_BACKGROUND = "#ffffff"; // branco
 
 export const DEFAULT_BRANDING: BrandingState = {
   fantasyName: "Controller CMV Pro",
   legalName: "",
   cnpj: "",
   logoDataUrl: null,
-  bgTheme: "branco",
-  btnTheme: "verde",
+  primaryColor: DEFAULT_PRIMARY,
+  backgroundColor: DEFAULT_BACKGROUND,
 };
 const DEFAULT = DEFAULT_BRANDING;
 
-const STORAGE_KEY = "branding-settings-v1";
+const STORAGE_KEY = "branding-settings-v2";
+const LEGACY_STORAGE_KEY = "branding-settings-v1";
 
 interface Ctx extends BrandingState {
   update: (patch: Partial<BrandingState>) => void;
@@ -34,64 +37,164 @@ interface Ctx extends BrandingState {
 
 const BrandingContext = createContext<Ctx | undefined>(undefined);
 
-// oklch values for backgrounds. [bg, fg, card, muted, border]
-const BG_THEMES: Record<BgTheme, { label: string; bg: string; fg: string; card: string; muted: string; border: string; sidebar: string; isDark: boolean }> = {
-  "branco":        { label: "Branco",        bg: "oklch(0.99 0 0)",       fg: "oklch(0.18 0.03 250)", card: "oklch(1 0 0)",       muted: "oklch(0.96 0.01 240)", border: "oklch(0.92 0.013 255)", sidebar: "oklch(0.98 0.003 248)", isDark: false },
-  "preto":         { label: "Preto",         bg: "oklch(0.06 0 0)",       fg: "oklch(0.96 0 0)",      card: "oklch(0.16 0 0)",    muted: "oklch(0.20 0 0)",      border: "oklch(0.28 0 0)",       sidebar: "oklch(0.09 0 0)",       isDark: true  },
-  "cinza-claro":   { label: "Cinza Claro",   bg: "oklch(0.94 0.003 250)", fg: "oklch(0.20 0.02 250)", card: "oklch(0.98 0 0)",    muted: "oklch(0.90 0.005 250)",border: "oklch(0.86 0.008 250)", sidebar: "oklch(0.92 0.004 250)", isDark: false },
-  "cinza-escuro":  { label: "Cinza Escuro",  bg: "oklch(0.22 0.005 250)", fg: "oklch(0.96 0 0)",      card: "oklch(0.28 0.006 250)",muted: "oklch(0.30 0.005 250)",border: "oklch(0.36 0.008 250)",sidebar: "oklch(0.18 0.005 250)", isDark: true  },
-  "azul-marinho":  { label: "Azul Marinho",  bg: "oklch(0.20 0.06 260)",  fg: "oklch(0.97 0.01 250)", card: "oklch(0.26 0.07 260)",muted: "oklch(0.28 0.06 260)", border: "oklch(0.34 0.07 260)",  sidebar: "oklch(0.16 0.06 260)",  isDark: true  },
-  "azul-oceano":   { label: "Azul Oceano Profundo", bg: "oklch(0.22 0.05 230)", fg: "oklch(0.96 0.01 230)", card: "oklch(0.27 0.06 230)", muted: "oklch(0.30 0.05 230)", border: "oklch(0.36 0.06 230)", sidebar: "oklch(0.18 0.05 230)", isDark: true },
-};
+// ---------- Color utilities ----------
+function clamp(n: number, min = 0, max = 255) {
+  return Math.max(min, Math.min(max, n));
+}
 
-const BTN_THEMES: Record<BtnTheme, { label: string; primary: string; primaryFg: string }> = {
-  "verde":   { label: "Verde",   primary: "oklch(0.60 0.16 155)", primaryFg: "oklch(0.99 0 0)" },
-  "azul":    { label: "Azul",    primary: "oklch(0.55 0.18 255)", primaryFg: "oklch(0.99 0 0)" },
-  "laranja": { label: "Laranja", primary: "oklch(0.70 0.18 50)",  primaryFg: "oklch(0.15 0.04 50)" },
-  "preto":   { label: "Preto",   primary: "oklch(0.18 0 0)",      primaryFg: "oklch(0.99 0 0)" },
-  "branco":  { label: "Branco",  primary: "oklch(0.99 0 0)",      primaryFg: "oklch(0.15 0 0)" },
-  "cinza":   { label: "Cinza",   primary: "oklch(0.50 0.005 250)",primaryFg: "oklch(0.99 0 0)" },
-};
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  let h = hex.replace("#", "").trim();
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return { r: 0, g: 0, b: 0 };
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  };
+}
 
-export const BG_OPTIONS = (Object.keys(BG_THEMES) as BgTheme[]).map((k) => ({ key: k, label: BG_THEMES[k].label, swatch: BG_THEMES[k].bg }));
-export const BTN_OPTIONS = (Object.keys(BTN_THEMES) as BtnTheme[]).map((k) => ({ key: k, label: BTN_THEMES[k].label, swatch: BTN_THEMES[k].primary }));
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (n: number) => clamp(Math.round(n)).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
 
-function applyTheme(bg: BgTheme, btn: BtnTheme) {
+/** Relative luminance per WCAG */
+function luminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex);
+  const a = [r, g, b].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+}
+
+function isDark(hex: string): boolean {
+  return luminance(hex) < 0.5;
+}
+
+function readableForeground(bgHex: string): string {
+  return isDark(bgHex) ? "#ffffff" : "#0a0a0a";
+}
+
+function mix(aHex: string, bHex: string, t: number): string {
+  const a = hexToRgb(aHex);
+  const b = hexToRgb(bHex);
+  return rgbToHex(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t);
+}
+
+/** Lighten or darken depending on base luminance */
+function shift(hex: string, amount: number): string {
+  // amount: positive lightens, negative darkens
+  const target = amount >= 0 ? "#ffffff" : "#000000";
+  return mix(hex, target, Math.abs(amount));
+}
+
+/** Build a full token palette from primary + background hex */
+function buildPalette(primary: string, background: string) {
+  const dark = isDark(background);
+  const fg = readableForeground(background);
+  const primaryFg = readableForeground(primary);
+
+  // Surfaces derived from background
+  const card = dark ? shift(background, 0.08) : shift(background, 0.02);
+  const popover = card;
+  const muted = dark ? shift(background, 0.14) : shift(background, 0.05);
+  const secondary = muted;
+  const border = dark ? shift(background, 0.22) : shift(background, 0.12);
+  const input = border;
+  const sidebar = dark ? shift(background, 0.04) : shift(background, 0.015);
+  const sidebarAccent = muted;
+
+  // Accent tinted by primary
+  const accent = dark ? mix(background, primary, 0.18) : mix(background, primary, 0.12);
+  const accentFg = dark ? mix(primary, "#ffffff", 0.4) : mix(primary, "#000000", 0.45);
+
+  const mutedFg = dark ? mix(fg, background, 0.35) : mix(fg, background, 0.4);
+
+  return {
+    background,
+    foreground: fg,
+    card,
+    cardForeground: fg,
+    popover,
+    popoverForeground: fg,
+    primary,
+    primaryForeground: primaryFg,
+    secondary,
+    secondaryForeground: fg,
+    muted,
+    mutedForeground: mutedFg,
+    accent,
+    accentForeground: accentFg,
+    border,
+    input,
+    ring: primary,
+    sidebar,
+    sidebarForeground: fg,
+    sidebarPrimary: primary,
+    sidebarPrimaryForeground: primaryFg,
+    sidebarAccent,
+    sidebarAccentForeground: fg,
+    sidebarBorder: border,
+    sidebarRing: primary,
+    isDark: dark,
+  };
+}
+
+function applyTheme(primary: string, background: string) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  const b = BG_THEMES[bg];
-  const p = BTN_THEMES[btn];
-  // Apply variables — these override :root defaults
-  root.style.setProperty("--background", b.bg);
-  root.style.setProperty("--foreground", b.fg);
-  root.style.setProperty("--card", b.card);
-  root.style.setProperty("--card-foreground", b.fg);
-  root.style.setProperty("--popover", b.card);
-  root.style.setProperty("--popover-foreground", b.fg);
-  root.style.setProperty("--muted", b.muted);
-  root.style.setProperty("--secondary", b.muted);
-  root.style.setProperty("--border", b.border);
-  root.style.setProperty("--input", b.border);
-  root.style.setProperty("--sidebar", b.sidebar);
-  root.style.setProperty("--sidebar-foreground", b.fg);
-  root.style.setProperty("--sidebar-border", b.border);
-  root.style.setProperty("--sidebar-accent", b.muted);
-  root.style.setProperty("--sidebar-accent-foreground", b.fg);
-  root.style.setProperty("--primary", p.primary);
-  root.style.setProperty("--primary-foreground", p.primaryFg);
-  root.style.setProperty("--sidebar-primary", p.primary);
-  root.style.setProperty("--sidebar-primary-foreground", p.primaryFg);
-  root.style.setProperty("--ring", p.primary);
-  // dark class hint for components that depend on it
-  root.classList.toggle("dark", b.isDark);
+  const p = buildPalette(primary, background);
+
+  const set = (k: string, v: string) => root.style.setProperty(k, v);
+
+  set("--background", p.background);
+  set("--foreground", p.foreground);
+  set("--card", p.card);
+  set("--card-foreground", p.cardForeground);
+  set("--popover", p.popover);
+  set("--popover-foreground", p.popoverForeground);
+  set("--primary", p.primary);
+  set("--primary-foreground", p.primaryForeground);
+  set("--secondary", p.secondary);
+  set("--secondary-foreground", p.secondaryForeground);
+  set("--muted", p.muted);
+  set("--muted-foreground", p.mutedForeground);
+  set("--accent", p.accent);
+  set("--accent-foreground", p.accentForeground);
+  set("--border", p.border);
+  set("--input", p.input);
+  set("--ring", p.ring);
+  set("--sidebar", p.sidebar);
+  set("--sidebar-foreground", p.sidebarForeground);
+  set("--sidebar-primary", p.sidebarPrimary);
+  set("--sidebar-primary-foreground", p.sidebarPrimaryForeground);
+  set("--sidebar-accent", p.sidebarAccent);
+  set("--sidebar-accent-foreground", p.sidebarAccentForeground);
+  set("--sidebar-border", p.sidebarBorder);
+  set("--sidebar-ring", p.sidebarRing);
+
+  root.classList.toggle("dark", p.isDark);
 }
 
 function loadInitial(): BrandingState {
   if (typeof window === "undefined") return DEFAULT;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT;
-    return { ...DEFAULT, ...JSON.parse(raw) };
+    if (raw) return { ...DEFAULT, ...JSON.parse(raw) };
+    // Migration from v1
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy) {
+      const v1 = JSON.parse(legacy);
+      return {
+        ...DEFAULT,
+        fantasyName: v1.fantasyName ?? DEFAULT.fantasyName,
+        legalName: v1.legalName ?? "",
+        cnpj: v1.cnpj ?? "",
+        logoDataUrl: v1.logoDataUrl ?? null,
+      };
+    }
+    return DEFAULT;
   } catch {
     return DEFAULT;
   }
@@ -104,13 +207,13 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initial = loadInitial();
     setState(initial);
-    applyTheme(initial.bgTheme, initial.btnTheme);
+    applyTheme(initial.primaryColor, initial.backgroundColor);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    applyTheme(state.bgTheme, state.btnTheme);
+    applyTheme(state.primaryColor, state.backgroundColor);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
