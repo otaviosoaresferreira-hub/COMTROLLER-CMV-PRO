@@ -430,6 +430,7 @@ export function EntryItemCard({
               checked={data.newContabilizaCmv}
               onChange={(v) => onChange({ newContabilizaCmv: v })}
               tone={data.newContabilizaCmv ? "ok" : "warn"}
+              tooltip="Ative para itens que compõem o custo dos pratos. Desative para materiais de limpeza ou descartáveis."
             />
             <SwitchTile
               label="Unidade Compartilhada"
@@ -440,6 +441,7 @@ export function EntryItemCard({
                   newUnit: v ? "UN" : data.newUnit,
                 })
               }
+              tooltip="Habilita o controle dual (UN/KG). Ideal para converter peso em porções ou peças em peso líquido, garantindo precisão total no inventário e no custo real."
             />
           </div>
 
