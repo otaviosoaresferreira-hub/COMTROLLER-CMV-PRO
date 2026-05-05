@@ -95,6 +95,17 @@ const fmt3 = (n: number) =>
   Number.isFinite(n)
     ? n.toLocaleString("pt-BR", { maximumFractionDigits: 3 })
     : "0";
+/** Máscara de exibição (PT-BR) com até N decimais, sem perder a precisão do estado. */
+const maskDec = (s: string, decimals: number): string => {
+  if (s == null || s === "") return "";
+  const raw = s.toString().trim();
+  // se for uma expressão em curso (termina em vírgula/ponto), preserva
+  if (/[.,]$/.test(raw)) return raw.replace(".", ",");
+  const n = Number(raw.replace(",", "."));
+  if (!Number.isFinite(n)) return raw;
+  // Trunca decimais somente para EXIBIÇÃO (sem alterar o estado).
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: decimals });
+};
 const fmtBRL = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 
