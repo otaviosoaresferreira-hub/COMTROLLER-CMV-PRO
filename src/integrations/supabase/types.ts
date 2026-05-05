@@ -1742,6 +1742,7 @@ export type Database = {
       sales_item_mappings: {
         Row: {
           created_at: string
+          external_code: string | null
           id: string
           multiplier: number
           org_id: string
@@ -1751,6 +1752,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          external_code?: string | null
           id?: string
           multiplier?: number
           org_id?: string
@@ -1760,6 +1762,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          external_code?: string | null
           id?: string
           multiplier?: number
           org_id?: string
