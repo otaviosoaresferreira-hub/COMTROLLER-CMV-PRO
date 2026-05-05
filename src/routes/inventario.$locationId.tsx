@@ -58,6 +58,7 @@ type StockItem = {
   shared_unit_enabled: boolean;
   standard_weight_g: number;
   avg_weight_g: number;
+  weight_variable?: boolean;
 };
 
 type CountEntry = {
