@@ -1537,6 +1537,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_stock_fefo: {
+        Args: { _item_id: string; _qty: number }
+        Returns: {
+          batch_id: string
+          expiry_date: string
+          taken: number
+          unit_cost: number
+        }[]
+      }
+      consume_stock_fefo_units: {
+        Args: { _item_id: string; _units: number }
+        Returns: {
+          batch_id: string
+          expiry_date: string
+          kg_taken: number
+          unit_cost: number
+          units_taken: number
+        }[]
+      }
       current_user_org_id: { Args: never; Returns: string }
       current_user_org_ids: { Args: never; Returns: string[] }
       ensure_my_primary_organization: { Args: never; Returns: string }
@@ -1565,6 +1584,29 @@ export type Database = {
       }
       is_gestor: { Args: { _org_id: string }; Returns: boolean }
       is_org_member: { Args: { _org_id: string }; Returns: boolean }
+      list_active_batches: {
+        Args: { _item_id: string }
+        Returns: {
+          avg_weight_g: number
+          created_at: string
+          current_qty: number
+          edited_at: string
+          expiry_date: string
+          id: string
+          initial_qty: number
+          invoice_id: string
+          lot_number: string
+          movement_id: string
+          reverted_at: string
+          source: string
+          unit_cost: number
+        }[]
+      }
+      reorganize_org_categories: {
+        Args: { _org_id: string }
+        Returns: undefined
+      }
+      seed_suggested_categories: { Args: { _org_id: string }; Returns: number }
       setup_new_organization: { Args: { _org_id: string }; Returns: undefined }
     }
     Enums: {
