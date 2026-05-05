@@ -290,8 +290,8 @@ export function EntryItemCard({
   );
 
   // Sugestão automática: ao vincular a um Insumo Existente que possui Peso Base
-  // cadastrado (standard_weight_g), pré-popula o "Peso do Lote Atual".
-  // Só preenche se o campo estiver vazio para não sobrescrever input do usuário.
+  // cadastrado (standard_weight_g), pré-popula o "Peso do Lote Atual" da CALCULADORA
+  // — sem nunca tocar no Peso Base do cadastro original.
   const lastLoadedItemId = useRef<string>("");
   useEffect(() => {
     if (data.mode !== "existing") return;
@@ -299,15 +299,15 @@ export function EntryItemCard({
     if (lastLoadedItemId.current === selected.id) return;
     lastLoadedItemId.current = selected.id;
     const stdKg = Number(selected.standard_weight_g ?? 0) / 1000;
-    if (stdKg > 0 && !data.newStandardWeightKg) {
+    if (stdKg > 0 && !data.lotWeightKg) {
       onChange({
-        newStandardWeightKg: stdKg.toLocaleString("en-US", {
+        lotWeightKg: stdKg.toLocaleString("en-US", {
           maximumFractionDigits: 6,
           useGrouping: false,
         }),
       });
     }
-  }, [selected, data.mode, data.newStandardWeightKg, onChange]);
+  }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
   const packLabel = t.sharedActive
