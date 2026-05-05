@@ -160,7 +160,7 @@ function InventarioLocation() {
       const { data, error } = await supabase
         .from("items")
         .select(
-          "id,name,unit,category_id,shared_unit_enabled,standard_weight_g,avg_weight_g",
+          "id,name,unit,category_id,shared_unit_enabled,standard_weight_g,avg_weight_g,weight_variable",
         )
         .eq("is_active", true)
         .eq("is_free", false)
