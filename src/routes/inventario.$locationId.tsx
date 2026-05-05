@@ -570,10 +570,62 @@ function InventarioLocation() {
         });
         if (e2) throw e2;
       }
+
+      // Se este inventário foi feito no Estoque Central, registramos as
+      // divergências em uma trilha auditável e disparamos auditorias rápidas
+      // nas unidades que movimentaram cada item nos últimos 14 dias.
+      let discrepanciesCreated = 0;
+      let auditsRequested = 0;
+      if (isCentralLocation && divergences.length > 0) {
+        const itemIds = divergences.map((d) => d.item.id);
+        const recentByItem = await findRecentlyActiveLocations(
+          itemIds,
+          locationId,
+          14,
+        );
+        for (const d of divergences) {
+          const kind: "shortage" | "surplus" = d.delta < 0 ? "shortage" : "surplus";
+          const { data: discRow, error: eDisc } = await supabase
+            .from("inventory_discrepancies")
+            .insert({
+              count_id: countId,
+              item_id: d.item.id,
+              central_location_id: locationId,
+              kind,
+              expected_qty: d.systemDisplay,
+              counted_qty: d.countedDisplay,
+              delta_qty: d.delta,
+              display_unit: d.displayUnit,
+              status: "pending",
+            })
+            .select("id")
+            .single();
+          if (eDisc) throw eDisc;
+          discrepanciesCreated += 1;
+          if (kind === "shortage") {
+            const targets = recentByItem[d.item.id] ?? [];
+            if (targets.length > 0) {
+              const rows = targets.map((loc) => ({
+                discrepancy_id: discRow!.id,
+                location_id: loc,
+                status: "pending" as const,
+              }));
+              const { error: eAud } = await supabase
+                .from("inventory_discrepancy_audits")
+                .insert(rows);
+              if (eAud) throw eAud;
+              auditsRequested += rows.length;
+            }
+          }
+        }
+      }
+
       return {
         adjusted: divergences.length - transferredCount,
         reconciled: reconciledItemIds.size,
         transferred: transferredCount,
+        discrepanciesCreated,
+        auditsRequested,
       };
     },
     onSuccess: ({ adjusted, reconciled, transferred }) => {
