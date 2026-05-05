@@ -207,9 +207,16 @@ export function computeEntryTotals(
 }
 
 /**
- * Calculadora bidirecional para o bloco SHARED:
- * Qtd × Peso do Lote = Peso Total.
- * Mantém os dois últimos campos editados como "âncoras" e recalcula o terceiro.
+ * Calculadora bidirecional (regra de três ativa) para o bloco SHARED.
+ *
+ *   Qtd. Unidades  ×  Peso do Lote (kg/un)  =  Peso Total (kg)
+ *
+ * Regras:
+ * - Se 2 dos 3 campos tiverem valor > 0 → calcula o terceiro automaticamente.
+ * - Se o usuário apagar um campo e os outros dois ainda tiverem valor → recalcula
+ *   o apagado imediatamente (campo nunca fica zerado se há dados suficientes).
+ * - Mantém precisão total no estado (sem arredondar). A máscara de exibição
+ *   ocorre apenas no Input (vide `maskDec`).
  */
 export function applyBidirectional(
   data: EntryCardData,
@@ -221,39 +228,52 @@ export function applyBidirectional(
   if (field === "lot") patch.newStandardWeightKg = rawValue;
   if (field === "total") patch.sharedTotalKg = rawValue;
 
+  // Atualiza histórico de campos editados (usado como desempate quando os 3 têm valor).
   const prev = data.sharedLastEdited;
   const newPrev = prev && prev !== field ? prev : data.sharedPrevEdited;
   patch.sharedLastEdited = field;
   patch.sharedPrevEdited = newPrev;
 
-  const valUnits =
-    field === "units" ? parseDec(rawValue) : parseDec(data.sharedUnits);
-  const valLot =
-    field === "lot" ? parseDec(rawValue) : parseDec(data.newStandardWeightKg);
-  const valTotal =
-    field === "total" ? parseDec(rawValue) : parseDec(data.sharedTotalKg);
+  // Valores efetivos pós-edição
+  const valUnits = field === "units" ? parseDec(rawValue) : parseDec(data.sharedUnits);
+  const valLot = field === "lot" ? parseDec(rawValue) : parseDec(data.newStandardWeightKg);
+  const valTotal = field === "total" ? parseDec(rawValue) : parseDec(data.sharedTotalKg);
 
-  // Os dois campos "âncora" são: o atual (field) e o newPrev.
-  const anchors = new Set<string>([field]);
-  if (newPrev) anchors.add(newPrev);
+  const has = {
+    units: valUnits > 0,
+    lot: valLot > 0,
+    total: valTotal > 0,
+  };
+  const filledCount = (has.units ? 1 : 0) + (has.lot ? 1 : 0) + (has.total ? 1 : 0);
 
-  // Se temos exatamente os dois âncoras com valores, calcula o terceiro
-  if (anchors.size === 2) {
-    const target = (["units", "lot", "total"] as const).find((k) => !anchors.has(k));
-    if (target === "total" && valUnits > 0 && valLot > 0) {
-      patch.sharedTotalKg = (valUnits * valLot).toLocaleString("en-US", {
-        maximumFractionDigits: 3,
-        useGrouping: false,
-      });
-    } else if (target === "lot" && valUnits > 0 && valTotal > 0) {
-      patch.newStandardWeightKg = (valTotal / valUnits).toLocaleString("en-US", {
-        maximumFractionDigits: 4,
-        useGrouping: false,
-      });
-    } else if (target === "units" && valLot > 0 && valTotal > 0) {
-      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
-    }
+  // Decide qual campo é o "alvo" do cálculo:
+  // - Se exatamente 2 campos preenchidos → o vazio é o alvo.
+  // - Se 3 preenchidos → alvo é aquele que NÃO é o atual nem o penúltimo editado
+  //   (ou seja, o mais "antigo"), preservando a intenção do usuário.
+  let target: "units" | "lot" | "total" | null = null;
+  if (filledCount === 2) {
+    target = (["units", "lot", "total"] as const).find((k) => !has[k]) ?? null;
+  } else if (filledCount === 3) {
+    const anchors = new Set<string>([field]);
+    if (newPrev) anchors.add(newPrev);
+    target = (["units", "lot", "total"] as const).find((k) => !anchors.has(k)) ?? null;
   }
+
+  // Precisão total no estado — máscara ocorre só na exibição.
+  const toState = (n: number) => {
+    if (!Number.isFinite(n) || n <= 0) return "";
+    return n.toLocaleString("en-US", { maximumFractionDigits: 12, useGrouping: false });
+  };
+
+  if (target === "total" && has.units && has.lot) {
+    patch.sharedTotalKg = toState(valUnits * valLot);
+  } else if (target === "lot" && has.units && has.total) {
+    patch.newStandardWeightKg = toState(valTotal / valUnits);
+  } else if (target === "units" && has.lot && has.total) {
+    // Unidades são inteiras → arredonda para o inteiro mais próximo.
+    patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+  }
+
   return patch;
 }
 
