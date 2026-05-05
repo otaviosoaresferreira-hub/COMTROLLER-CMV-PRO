@@ -45,7 +45,7 @@ export function BatchPreviewList({
         _item_id: itemId,
       });
       if (error) throw new Error(error.message);
-      return ((data ?? []) as Batch[]).filter((b) => Number(b.current_qty) > 0);
+      return ((data ?? []) as unknown as Batch[]).filter((b) => Number(b.current_qty) > 0);
     },
     enabled: !!itemId,
     staleTime: 5_000,
