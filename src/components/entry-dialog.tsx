@@ -2131,7 +2131,7 @@ function ManualEntryTab({
         const standardWeightG = sharedActive
           ? r.mode === "existing"
             ? Number(existing?.standard_weight_g ?? 0)
-            : Number(r.newStandardWeightG.replace(",", ".")) || 0
+            : (Number((r.newStandardWeightKg || "").replace(",", ".")) || 0) * 1000
           : 0;
 
         let stockQty: number;
