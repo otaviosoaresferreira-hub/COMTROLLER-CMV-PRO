@@ -821,6 +821,7 @@ export type Database = {
           total_weight_g: number
           unit_cost: number
           units_qty: number
+          weight_variable_at_entry: boolean | null
         }
         Insert: {
           avg_weight_g?: number
@@ -841,6 +842,7 @@ export type Database = {
           total_weight_g?: number
           unit_cost?: number
           units_qty?: number
+          weight_variable_at_entry?: boolean | null
         }
         Update: {
           avg_weight_g?: number
@@ -861,6 +863,7 @@ export type Database = {
           total_weight_g?: number
           unit_cost?: number
           units_qty?: number
+          weight_variable_at_entry?: boolean | null
         }
         Relationships: [
           {
