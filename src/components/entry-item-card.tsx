@@ -177,6 +177,9 @@ export function computeEntryTotals(
       ? Number(selected?.standard_weight_g ?? 0) / 1000
       : parseDec(data.newStandardWeightKg);
 
+  // Peso por unidade DESTE LOTE — usa o lote se preenchido, senão cai no Peso Base.
+  const lotKg = parseDec(data.lotWeightKg) || standardKg;
+
   const qty = parseDec(data.quantity);
   const pack = parseDec(data.packQty) || 1;
   const units = parseDec(data.sharedUnits);
@@ -185,7 +188,7 @@ export function computeEntryTotals(
 
   let stockQty = 0;
   if (sharedActive) {
-    stockQty = totalKg > 0 ? totalKg : units * (standardKg || 0);
+    stockQty = totalKg > 0 ? totalKg : units * (lotKg || 0);
   } else {
     stockQty = qty * pack;
   }
