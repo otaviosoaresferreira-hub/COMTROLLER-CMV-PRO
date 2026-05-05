@@ -232,7 +232,7 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
           .eq("is_free", false)
           .order("name"),
         supabase.from("categories").select("id,name").order("name"),
-        supabase.from("sales_item_mappings").select("id,source_name,recipe_id,multiplier"),
+        supabase.from("sales_item_mappings").select("id,source_name,external_code,recipe_id,multiplier"),
         locationId
           ? supabase
               .from("recipe_unit_overrides")
