@@ -549,6 +549,7 @@ export function EntryItemCard({
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
 
