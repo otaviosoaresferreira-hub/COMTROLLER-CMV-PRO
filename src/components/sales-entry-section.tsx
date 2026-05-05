@@ -126,6 +126,9 @@ interface Props {
   onSalesChange: (m: SalesMap) => void;
   /** Local da operação atual — usado p/ buscar overrides de preço por unidade. */
   locationId?: string;
+  /** Callback opcional para receber o valor de descontos/despesas globais
+   *  (linhas com Cod === "---" no CSV do ConnectPlug). */
+  onGlobalDiscountChange?: (value: number) => void;
 }
 
 // Parser CSV simples e tolerante (suporta `,`, `;` e `\t` como separador,
