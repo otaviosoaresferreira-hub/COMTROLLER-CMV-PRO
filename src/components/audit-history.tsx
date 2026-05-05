@@ -34,6 +34,42 @@ function fmt(dt: string) {
   }
 }
 
+// Tradução de chaves técnicas do schema para rótulos em PT-BR no log.
+const FIELD_LABELS: Record<string, string> = {
+  shared_unit_enabled: "Unidade Compartilhada",
+  weight_variable: "Peso Variável",
+  weight_variable_at_entry: "Peso Variável (na entrada)",
+  avg_weight_g: "Peso Médio (g)",
+  standard_weight_g: "Peso Padrão (g)",
+  units_qty: "Unidades",
+  total_weight_g: "Peso Total (g)",
+  current_qty: "Saldo Atual",
+  initial_qty: "Saldo Inicial",
+  unit_cost: "Custo Unitário",
+  cost_price: "Custo",
+  sale_price: "Preço de Venda",
+  min_stock: "Estoque Mínimo",
+  expiry_date: "Validade",
+  lot_number: "Lote",
+  is_active: "Ativo",
+  is_operational: "Operacional",
+  contabiliza_cmv: "Contabiliza CMV",
+  category_id: "Categoria",
+  name: "Nome",
+  unit: "Unidade",
+};
+
+function labelFor(key: string): string {
+  return FIELD_LABELS[key] ?? key.replace(/_/g, " ");
+}
+
+function fmtVal(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Sim" : "Não";
+  if (typeof v === "number") return v.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+  return String(v);
+}
+
 function diffPreview(old: unknown, next: unknown): string | null {
   if (!old && !next) return null;
   try {
@@ -44,7 +80,7 @@ function diffPreview(old: unknown, next: unknown): string | null {
     for (const k of keys) {
       const a = JSON.stringify(o[k]);
       const b = JSON.stringify(n[k]);
-      if (a !== b) parts.push(`${k}: ${a ?? "—"} → ${b ?? "—"}`);
+      if (a !== b) parts.push(`${labelFor(k)}: ${fmtVal(o[k])} → ${fmtVal(n[k])}`);
     }
     return parts.length ? parts.slice(0, 4).join(" · ") : null;
   } catch {
