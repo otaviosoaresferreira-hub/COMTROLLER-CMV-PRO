@@ -83,7 +83,7 @@
   --secondary: oklch(0.96 0.01 240);
   --secondary-foreground: oklch(0.22 0.03 250);
   --muted: oklch(0.96 0.01 240);
-  --muted-foreground: oklch(0.5 0.02 250);
+  --muted-foreground: oklch(0.38 0.02 250);
   --accent: oklch(0.95 0.04 155);
   --accent-foreground: oklch(0.3 0.1 155);
   --destructive: oklch(0.577 0.245 27.325);
@@ -125,7 +125,7 @@
   --secondary: oklch(0.2 0 0);
   --secondary-foreground: oklch(0.96 0 0);
   --muted: oklch(0.2 0 0);
-  --muted-foreground: oklch(0.7 0 0);
+  --muted-foreground: oklch(0.82 0 0);
   --accent: oklch(0.22 0.05 155);
   --accent-foreground: oklch(0.92 0.05 155);
   --destructive: oklch(0.65 0.22 25);
@@ -156,5 +156,28 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Contraste reforçado — badges, alertas e tags devem usar peso médio
+     para nunca sumirem em fundos cinza/coloridos translúcidos. */
+  [role="alert"],
+  [data-slot="badge"],
+  .badge,
+  [class*="bg-destructive/"],
+  [class*="bg-warning/"],
+  [class*="bg-violet-"],
+  [class*="bg-amber-"] {
+    font-weight: 500;
+  }
+
+  /* Texto secundário em superfícies muted: garantir leitura em ambos os temas. */
+  .bg-muted .text-muted-foreground,
+  .bg-secondary .text-muted-foreground,
+  [class*="bg-muted/"] .text-muted-foreground {
+    color: color-mix(in oklab, var(--foreground) 78%, transparent);
+    font-weight: 500;
   }
 }

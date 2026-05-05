@@ -109,7 +109,7 @@ function buildPalette(primary: string, background: string) {
   const accent = dark ? mix(background, primary, 0.18) : mix(background, primary, 0.12);
   const accentFg = dark ? mix(primary, "#ffffff", 0.4) : mix(primary, "#000000", 0.45);
 
-  const mutedFg = dark ? mix(fg, background, 0.35) : mix(fg, background, 0.4);
+  const mutedFg = dark ? mix(fg, background, 0.18) : mix(fg, background, 0.22);
 
   return {
     background,
