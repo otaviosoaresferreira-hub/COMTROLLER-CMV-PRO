@@ -7,7 +7,7 @@ type Batch = {
   id: string;
   lot_number: string | null;
   current_qty: number;
-  units_qty: number;
+  units_qty?: number | null;
   avg_weight_g: number;
   expiry_date: string | null;
   created_at: string;
