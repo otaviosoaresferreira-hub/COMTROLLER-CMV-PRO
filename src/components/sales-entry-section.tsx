@@ -83,14 +83,43 @@ const fmtBRL = (n: number) =>
 type Mapping = {
   id: string;
   source_name: string;
+  external_code: string | null;
   recipe_id: string;
   multiplier: number;
 };
 
 type Unmapped = {
-  source_name: string;
+  /** Código original do CSV (ex.: "90", "126_712"). Vazio se não houver. */
+  source_code: string;
+  /** Nome curto exibido (parte antes do primeiro "-" do campo Produto). */
+  display_name: string;
   qty: number;
+  /** Receita bruta apurada para esse código. */
+  revenue: number;
 };
+
+/** Extrai o "nome curto" do produto: tudo antes do primeiro " - ". */
+function shortName(raw: string): string {
+  if (!raw) return "";
+  const idx = raw.indexOf(" - ");
+  if (idx < 0) {
+    const dash = raw.indexOf("-");
+    return (dash > 0 ? raw.slice(0, dash) : raw).trim();
+  }
+  return raw.slice(0, idx).trim();
+}
+
+/** Parser de valor monetário BR ("R$ 36,90", "R$ -41,19"). */
+function parseMoneyBR(raw: string): number {
+  if (!raw) return 0;
+  const s = raw.replace(/[^0-9,.\-]/g, "").trim();
+  if (!s) return 0;
+  let n = s;
+  if (n.includes(",") && n.includes(".")) n = n.replace(/\./g, "").replace(",", ".");
+  else if (n.includes(",")) n = n.replace(",", ".");
+  const v = Number(n);
+  return Number.isFinite(v) ? v : 0;
+}
 
 interface Props {
   sales: SalesMap;
