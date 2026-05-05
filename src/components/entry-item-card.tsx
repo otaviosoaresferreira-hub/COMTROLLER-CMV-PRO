@@ -230,6 +230,7 @@ export function EntryItemCard({
   const totalLabel = t.sharedActive ? "kg" : t.effectiveUnit;
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
       {/* Header: índice + estado de vínculo + remover */}
       <div className="flex items-center justify-between gap-2">
