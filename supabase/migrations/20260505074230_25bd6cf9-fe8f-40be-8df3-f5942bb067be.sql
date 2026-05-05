@@ -1,0 +1,1 @@
+ALTER TABLE public.inventory_discrepancies ALTER COLUMN count_id DROP NOT NULL;

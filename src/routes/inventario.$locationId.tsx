@@ -588,7 +588,7 @@ function InventarioLocation() {
           const { data: discRow, error: eDisc } = await supabase
             .from("inventory_discrepancies")
             .insert({
-              count_id: countId,
+              count_id: null,
               item_id: d.item.id,
               central_location_id: locationId,
               kind,

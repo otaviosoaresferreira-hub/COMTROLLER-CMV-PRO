@@ -566,7 +566,7 @@ export type Database = {
       inventory_discrepancies: {
         Row: {
           central_location_id: string
-          count_id: string
+          count_id: string | null
           counted_qty: number
           created_at: string
           delta_qty: number
@@ -584,7 +584,7 @@ export type Database = {
         }
         Insert: {
           central_location_id: string
-          count_id: string
+          count_id?: string | null
           counted_qty?: number
           created_at?: string
           delta_qty?: number
@@ -602,7 +602,7 @@ export type Database = {
         }
         Update: {
           central_location_id?: string
-          count_id?: string
+          count_id?: string | null
           counted_qty?: number
           created_at?: string
           delta_qty?: number
