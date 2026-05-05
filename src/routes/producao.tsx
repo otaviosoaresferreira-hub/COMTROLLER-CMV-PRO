@@ -37,7 +37,12 @@ import {
   History,
   CalendarRange,
   Trash2,
+  AlertTriangle,
+  Timer,
+  XOctagon,
+  Settings2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useManagerMode } from "@/lib/manager-mode";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
