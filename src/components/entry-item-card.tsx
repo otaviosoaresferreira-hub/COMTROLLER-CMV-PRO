@@ -80,6 +80,10 @@ export type EntryCardData = {
   // Lote — Unidade Compartilhada
   sharedUnits: string;
   sharedTotalKg: string;
+  /** Último campo SHARED tocado pelo usuário ("units" | "lot" | "total"). */
+  sharedLastEdited?: "units" | "lot" | "total";
+  /** Penúltimo campo tocado — usado como segundo input no cálculo bidirecional. */
+  sharedPrevEdited?: "units" | "lot" | "total";
 
   // Rodapé
   expiryDate: string;
