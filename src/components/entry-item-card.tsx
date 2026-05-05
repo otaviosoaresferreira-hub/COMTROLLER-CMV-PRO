@@ -80,10 +80,11 @@ export type EntryCardData = {
   // Lote — Unidade Compartilhada
   sharedUnits: string;
   sharedTotalKg: string;
-  /** Último campo SHARED tocado pelo usuário ("units" | "lot" | "total"). */
-  sharedLastEdited?: "units" | "lot" | "total";
-  /** Penúltimo campo tocado — usado como segundo input no cálculo bidirecional. */
-  sharedPrevEdited?: "units" | "lot" | "total";
+  /**
+   * Peso por unidade DESTE LOTE (kg/un). Independente do Peso Base do cadastro.
+   * Em "Peso Fixo" fica travado no Peso Base. Em "Peso Variável" é livre.
+   */
+  lotWeightKg: string;
 
   // Rodapé
   expiryDate: string;
@@ -133,8 +134,7 @@ export function makeBlankEntryCard(): EntryCardData {
     totalValue: "",
     sharedUnits: "",
     sharedTotalKg: "",
-    sharedLastEdited: undefined,
-    sharedPrevEdited: undefined,
+    lotWeightKg: "",
     expiryDate: "",
     lotNumber: "",
   };
@@ -177,6 +177,9 @@ export function computeEntryTotals(
       ? Number(selected?.standard_weight_g ?? 0) / 1000
       : parseDec(data.newStandardWeightKg);
 
+  // Peso por unidade DESTE LOTE — usa o lote se preenchido, senão cai no Peso Base.
+  const lotKg = parseDec(data.lotWeightKg) || standardKg;
+
   const qty = parseDec(data.quantity);
   const pack = parseDec(data.packQty) || 1;
   const units = parseDec(data.sharedUnits);
@@ -185,7 +188,7 @@ export function computeEntryTotals(
 
   let stockQty = 0;
   if (sharedActive) {
-    stockQty = totalKg > 0 ? totalKg : units * (standardKg || 0);
+    stockQty = totalKg > 0 ? totalKg : units * (lotKg || 0);
   } else {
     stockQty = qty * pack;
   }
@@ -225,39 +228,13 @@ export function applyBidirectional(
 ): Partial<EntryCardData> {
   const patch: Partial<EntryCardData> = {};
   if (field === "units") patch.sharedUnits = rawValue;
-  if (field === "lot") patch.newStandardWeightKg = rawValue;
+  if (field === "lot") patch.lotWeightKg = rawValue;
   if (field === "total") patch.sharedTotalKg = rawValue;
-
-  // Atualiza histórico de campos editados (usado como desempate quando os 3 têm valor).
-  const prev = data.sharedLastEdited;
-  const newPrev = prev && prev !== field ? prev : data.sharedPrevEdited;
-  patch.sharedLastEdited = field;
-  patch.sharedPrevEdited = newPrev;
 
   // Valores efetivos pós-edição
   const valUnits = field === "units" ? parseDec(rawValue) : parseDec(data.sharedUnits);
-  const valLot = field === "lot" ? parseDec(rawValue) : parseDec(data.newStandardWeightKg);
+  const valLot = field === "lot" ? parseDec(rawValue) : parseDec(data.lotWeightKg);
   const valTotal = field === "total" ? parseDec(rawValue) : parseDec(data.sharedTotalKg);
-
-  const has = {
-    units: valUnits > 0,
-    lot: valLot > 0,
-    total: valTotal > 0,
-  };
-  const filledCount = (has.units ? 1 : 0) + (has.lot ? 1 : 0) + (has.total ? 1 : 0);
-
-  // Decide qual campo é o "alvo" do cálculo:
-  // - Se exatamente 2 campos preenchidos → o vazio é o alvo.
-  // - Se 3 preenchidos → alvo é aquele que NÃO é o atual nem o penúltimo editado
-  //   (ou seja, o mais "antigo"), preservando a intenção do usuário.
-  let target: "units" | "lot" | "total" | null = null;
-  if (filledCount === 2) {
-    target = (["units", "lot", "total"] as const).find((k) => !has[k]) ?? null;
-  } else if (filledCount === 3) {
-    const anchors = new Set<string>([field]);
-    if (newPrev) anchors.add(newPrev);
-    target = (["units", "lot", "total"] as const).find((k) => !anchors.has(k)) ?? null;
-  }
 
   // Precisão total no estado — máscara ocorre só na exibição.
   const toState = (n: number) => {
@@ -265,13 +242,23 @@ export function applyBidirectional(
     return n.toLocaleString("en-US", { maximumFractionDigits: 12, useGrouping: false });
   };
 
-  if (target === "total" && has.units && has.lot) {
-    patch.sharedTotalKg = toState(valUnits * valLot);
-  } else if (target === "lot" && has.units && has.total) {
-    patch.newStandardWeightKg = toState(valTotal / valUnits);
-  } else if (target === "units" && has.lot && has.total) {
-    // Unidades são inteiras → arredonda para o inteiro mais próximo.
-    patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+  // Prioridade fixa por campo editado (sem rastrear histórico):
+  // - units alterado  → recalcula total (se tiver lot)
+  // - lot alterado    → recalcula total (se tiver units)
+  // - total alterado  → recalcula lot   (se tiver units)
+  // Caso o "alvo" não tenha entradas suficientes, tenta recalcular outro campo
+  // que esteja vazio para nunca deixar zerado quando há 2 valores.
+  if (field === "units") {
+    if (valUnits > 0 && valLot > 0) patch.sharedTotalKg = toState(valUnits * valLot);
+    else if (valUnits > 0 && valTotal > 0) patch.lotWeightKg = toState(valTotal / valUnits);
+  } else if (field === "lot") {
+    if (valUnits > 0 && valLot > 0) patch.sharedTotalKg = toState(valUnits * valLot);
+    else if (valLot > 0 && valTotal > 0)
+      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+  } else if (field === "total") {
+    if (valUnits > 0 && valTotal > 0) patch.lotWeightKg = toState(valTotal / valUnits);
+    else if (valLot > 0 && valTotal > 0)
+      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
   }
 
   return patch;
@@ -303,8 +290,8 @@ export function EntryItemCard({
   );
 
   // Sugestão automática: ao vincular a um Insumo Existente que possui Peso Base
-  // cadastrado (standard_weight_g), pré-popula o "Peso do Lote Atual".
-  // Só preenche se o campo estiver vazio para não sobrescrever input do usuário.
+  // cadastrado (standard_weight_g), pré-popula o "Peso do Lote Atual" da CALCULADORA
+  // — sem nunca tocar no Peso Base do cadastro original.
   const lastLoadedItemId = useRef<string>("");
   useEffect(() => {
     if (data.mode !== "existing") return;
@@ -312,15 +299,15 @@ export function EntryItemCard({
     if (lastLoadedItemId.current === selected.id) return;
     lastLoadedItemId.current = selected.id;
     const stdKg = Number(selected.standard_weight_g ?? 0) / 1000;
-    if (stdKg > 0 && !data.newStandardWeightKg) {
+    if (stdKg > 0 && !data.lotWeightKg) {
       onChange({
-        newStandardWeightKg: stdKg.toLocaleString("en-US", {
+        lotWeightKg: stdKg.toLocaleString("en-US", {
           maximumFractionDigits: 6,
           useGrouping: false,
         }),
       });
     }
-  }, [selected, data.mode, data.newStandardWeightKg, onChange]);
+  }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
   const packLabel = t.sharedActive
@@ -507,28 +494,51 @@ export function EntryItemCard({
                   value={data.newWeightVariable ? "var" : "fix"}
                   onValueChange={(v) => {
                     if (!v) return;
-                    onChange({ newWeightVariable: v === "var" });
+                    const isVar = v === "var";
+                    const patch: Partial<EntryCardData> = { newWeightVariable: isVar };
+                    // Peso Fixo: trava o peso do lote = Peso Base
+                    if (!isVar && data.newStandardWeightKg) {
+                      patch.lotWeightKg = data.newStandardWeightKg;
+                      // recalcula total se houver unidades
+                      const u = parseDec(data.sharedUnits);
+                      const lk = parseDec(data.newStandardWeightKg);
+                      if (u > 0 && lk > 0) {
+                        patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
+                          maximumFractionDigits: 12,
+                          useGrouping: false,
+                        });
+                      }
+                    }
+                    onChange(patch);
                   }}
                   className="justify-start"
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ToggleGroupItem value="fix" size="sm" className="h-9 px-3 text-xs">
+                      <ToggleGroupItem
+                        value="fix"
+                        size="sm"
+                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                      >
                         Peso Fixo
                       </ToggleGroupItem>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                      Use para itens com peso padronizado (ex: Latas, Garrafas). O sistema avisará se houver divergência.
+                      Trava o Peso do Lote no Peso Base. Qtd × Peso Base = Total automaticamente.
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ToggleGroupItem value="var" size="sm" className="h-9 px-3 text-xs">
+                      <ToggleGroupItem
+                        value="var"
+                        size="sm"
+                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                      >
                         Peso Variável
                       </ToggleGroupItem>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                      Use para itens pesados na entrega (ex: Carnes, Hortis). O sistema calculará o custo médio real do lote.
+                      Libera o Peso do Lote para edição. O custo médio reflete o peso real recebido sem alterar o Peso Base.
                     </TooltipContent>
                   </Tooltip>
                 </ToggleGroup>
@@ -542,7 +552,23 @@ export function EntryItemCard({
                   min="0"
                   placeholder="0,000"
                   value={data.newStandardWeightKg}
-                  onChange={(e) => onChange({ newStandardWeightKg: e.target.value })}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const patch: Partial<EntryCardData> = { newStandardWeightKg: v };
+                    // Em Peso Fixo, o lote acompanha o Peso Base.
+                    if (!data.newWeightVariable) {
+                      patch.lotWeightKg = v;
+                      const u = parseDec(data.sharedUnits);
+                      const lk = parseDec(v);
+                      if (u > 0 && lk > 0) {
+                        patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
+                          maximumFractionDigits: 12,
+                          useGrouping: false,
+                        });
+                      }
+                    }
+                    onChange(patch);
+                  }}
                 />
               </div>
             </div>
@@ -575,11 +601,12 @@ export function EntryItemCard({
             <Op>×</Op>
             <FormulaInput
               label={`Peso do Lote Atual (${packLabel})`}
-              value={data.newStandardWeightKg}
+              value={data.lotWeightKg}
               onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
               step="0.001"
               suffix="kg"
               displayDecimals={3}
+              readOnly={t.sharedActive && !t.weightVariable}
             />
             <Op>=</Op>
             <FormulaInput
@@ -591,8 +618,8 @@ export function EntryItemCard({
               highlight
               displayDecimals={3}
               hint={
-                parseDec(data.sharedUnits) > 0 && parseDec(data.sharedTotalKg) > 0
-                  ? `${(parseDec(data.sharedTotalKg) / parseDec(data.sharedUnits)).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
+                parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
+                  ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
                   : undefined
               }
             />
@@ -648,8 +675,18 @@ export function EntryItemCard({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Custo unitário</Label>
-            <div className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-semibold tabular-nums">
-              {t.unitCost > 0 ? `${fmtBRL(t.unitCost)} / ${totalLabel}` : "—"}
+            <div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-muted/50 px-3 text-sm font-semibold tabular-nums">
+              <span>{t.unitCost > 0 ? `${fmtBRL(t.unitCost)} / ${totalLabel}` : "—"}</span>
+              {t.sharedActive && t.totalValue > 0 && (
+                <span className="flex flex-col items-end text-[10px] font-normal leading-tight text-muted-foreground">
+                  {t.totalKg > 0 && (
+                    <span>{fmtBRL(t.totalValue / t.totalKg)}/kg</span>
+                  )}
+                  {t.units > 0 && (
+                    <span>{fmtBRL(t.totalValue / t.units)}/un</span>
+                  )}
+                </span>
+              )}
             </div>
           </div>
         </div>
