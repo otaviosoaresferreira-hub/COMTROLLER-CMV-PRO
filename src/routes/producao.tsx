@@ -181,7 +181,120 @@ function ProducaoPage() {
     },
   });
 
-  const rows = useMemo(() => {
+  // === Alertas inteligentes de produção ===
+  const { data: alertsData } = useQuery({
+    queryKey: ["producao-alerts"],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 14);
+      const [recipes, ingredients, stock, salesMovs, locs] = await Promise.all([
+        supabase
+          .from("recipes")
+          .select("id,name,produced_item_id,unit_weight_g,yield_unit")
+          .eq("is_active", true),
+        supabase.from("recipe_ingredients").select("recipe_id,item_id,quantity,unit"),
+        supabase.from("stock_levels").select("item_id,location_id,current_stock"),
+        supabase
+          .from("movements")
+          .select("item_id,quantity,created_at,type")
+          .eq("type", "sale")
+          .gte("created_at", since.toISOString()),
+        supabase.from("locations").select("id,name,is_system"),
+      ]);
+      if (recipes.error) throw recipes.error;
+      if (ingredients.error) throw ingredients.error;
+      if (stock.error) throw stock.error;
+      if (salesMovs.error) throw salesMovs.error;
+      if (locs.error) throw locs.error;
+      return {
+        recipes: recipes.data,
+        ingredients: ingredients.data,
+        stock: stock.data,
+        sales: salesMovs.data,
+        centralId:
+          locs.data.find(
+            (l) => l.is_system && l.name.toLowerCase().includes("central"),
+          )?.id ?? null,
+      };
+    },
+  });
+
+  const alerts = useMemo(() => {
+    if (!alertsData) return [];
+    const days = 14;
+    const salesByItem = new Map<string, number>();
+    for (const s of alertsData.sales) {
+      salesByItem.set(s.item_id, (salesByItem.get(s.item_id) ?? 0) + Number(s.quantity));
+    }
+    const totalStockByItem = new Map<string, number>();
+    const centralStockByItem = new Map<string, number>();
+    for (const s of alertsData.stock) {
+      totalStockByItem.set(
+        s.item_id,
+        (totalStockByItem.get(s.item_id) ?? 0) + Number(s.current_stock),
+      );
+      if (alertsData.centralId && s.location_id === alertsData.centralId) {
+        centralStockByItem.set(
+          s.item_id,
+          (centralStockByItem.get(s.item_id) ?? 0) + Number(s.current_stock),
+        );
+      }
+    }
+
+    type AlertCard = {
+      id: string;
+      kind: "urgent" | "warning" | "blocked";
+      title: string;
+      message: string;
+      recipeId: string;
+    };
+    const out: AlertCard[] = [];
+    for (const r of alertsData.recipes) {
+      if (!r.produced_item_id) continue;
+      const itemId = r.produced_item_id;
+      const totalSold = salesByItem.get(itemId) ?? 0;
+      const avgPerDay = totalSold / days;
+      if (avgPerDay <= 0) continue;
+      const currentStock = totalStockByItem.get(itemId) ?? 0;
+      const daysLeft = currentStock / avgPerDay;
+      if (daysLeft >= coverageDays) continue;
+
+      const ingr = alertsData.ingredients.filter((i) => i.recipe_id === r.id);
+      const missing = ingr.filter(
+        (i) => i.item_id && (centralStockByItem.get(i.item_id) ?? 0) <= 0,
+      );
+      const unit = (r.yield_unit ?? "un").toLowerCase();
+
+      if (missing.length > 0) {
+        out.push({
+          id: r.id + "-blocked",
+          kind: "blocked",
+          recipeId: r.id,
+          title: `Impossível produzir ${r.name}`,
+          message: `Faltam insumos no Estoque Central para fabricar ${r.name}.`,
+        });
+      } else if (daysLeft < 1) {
+        out.push({
+          id: r.id + "-urgent",
+          kind: "urgent",
+          recipeId: r.id,
+          title: `Produção urgente: ${r.name}`,
+          message: `Estoque ${currentStock.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${unit} · venda média ${avgPerDay.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}/dia.`,
+        });
+      } else {
+        out.push({
+          id: r.id + "-warn",
+          kind: "warning",
+          recipeId: r.id,
+          title: `Previsão de ruptura: ${r.name}`,
+          message: `Estoque deve durar ~${daysLeft.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dias com base no histórico.`,
+        });
+      }
+    }
+    const order = { blocked: 0, urgent: 1, warning: 2 } as const;
+    return out.sort((a, b) => order[a.kind] - order[b.kind]);
+  }, [alertsData, coverageDays]);
+
     if (!data) return [];
     const parseBR = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
     return data.movs.map((m) => {
