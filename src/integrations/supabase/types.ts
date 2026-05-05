@@ -563,6 +563,113 @@ export type Database = {
           },
         ]
       }
+      inventory_discrepancies: {
+        Row: {
+          central_location_id: string
+          count_id: string
+          counted_qty: number
+          created_at: string
+          delta_qty: number
+          display_unit: string
+          expected_qty: number
+          id: string
+          item_id: string
+          kind: string
+          org_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          central_location_id: string
+          count_id: string
+          counted_qty?: number
+          created_at?: string
+          delta_qty?: number
+          display_unit?: string
+          expected_qty?: number
+          id?: string
+          item_id: string
+          kind: string
+          org_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          central_location_id?: string
+          count_id?: string
+          counted_qty?: number
+          created_at?: string
+          delta_qty?: number
+          display_unit?: string
+          expected_qty?: number
+          id?: string
+          item_id?: string
+          kind?: string
+          org_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_discrepancy_audits: {
+        Row: {
+          counted_at: string | null
+          counted_by: string | null
+          counted_qty: number | null
+          created_at: string
+          discrepancy_id: string
+          id: string
+          location_id: string
+          note: string | null
+          org_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          counted_at?: string | null
+          counted_by?: string | null
+          counted_qty?: number | null
+          created_at?: string
+          discrepancy_id: string
+          id?: string
+          location_id: string
+          note?: string | null
+          org_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          counted_at?: string | null
+          counted_by?: string | null
+          counted_qty?: number | null
+          created_at?: string
+          discrepancy_id?: string
+          id?: string
+          location_id?: string
+          note?: string | null
+          org_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_discrepancy_audits_discrepancy_id_fkey"
+            columns: ["discrepancy_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_discrepancies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
