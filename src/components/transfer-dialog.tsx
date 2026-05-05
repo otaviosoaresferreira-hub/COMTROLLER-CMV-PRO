@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { ArrowLeftRight, Check, ChevronsUpDown, Plus, Trash2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CENTRAL_LOCATION_NAME } from "@/lib/stock-constants";
+import { BatchPreviewList } from "@/components/batch-preview-list";
 
 type Item = {
   id: string;
@@ -689,6 +690,13 @@ export function TransferDialog({
                         </span>
                       )}
                     </p>
+                  )}
+                  {selectedItem && (
+                    <BatchPreviewList
+                      itemId={selectedItem.id}
+                      itemBaseUnit={(selectedItem.unit || "un").toLowerCase() === "kg" ? "kg" : "un"}
+                      sharedUnit={!!selectedItem.shared_unit_enabled}
+                    />
                   )}
                 </div>
                 <div className="space-y-2">
