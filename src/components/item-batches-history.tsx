@@ -206,9 +206,9 @@ export function ItemBatchesHistory({ itemId, onlyActive = true, editable = true 
           <TableRow>
             <TableHead className="text-xs">Lote</TableHead>
             <TableHead className="text-xs">Entrada</TableHead>
-            <TableHead className="text-xs text-right">Saldo (un)</TableHead>
-            <TableHead className="text-xs text-right">Peso total (kg)</TableHead>
-            <TableHead className="text-xs text-right">Peso médio</TableHead>
+            <TableHead className="text-xs text-right">Unidades</TableHead>
+            <TableHead className="text-xs text-right">Peso Total do Lote (kg)</TableHead>
+            <TableHead className="text-xs text-right">Peso Unitário do Lote</TableHead>
             <TableHead className="text-xs text-right">Custo</TableHead>
             <TableHead className="text-xs">Validade</TableHead>
             {editable && <TableHead className="text-xs w-16" />}
