@@ -601,11 +601,12 @@ export function EntryItemCard({
             <Op>×</Op>
             <FormulaInput
               label={`Peso do Lote Atual (${packLabel})`}
-              value={data.newStandardWeightKg}
+              value={data.lotWeightKg}
               onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
               step="0.001"
               suffix="kg"
               displayDecimals={3}
+              readOnly={t.sharedActive && !t.weightVariable}
             />
             <Op>=</Op>
             <FormulaInput
@@ -617,8 +618,8 @@ export function EntryItemCard({
               highlight
               displayDecimals={3}
               hint={
-                parseDec(data.sharedUnits) > 0 && parseDec(data.sharedTotalKg) > 0
-                  ? `${(parseDec(data.sharedTotalKg) / parseDec(data.sharedUnits)).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
+                parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
+                  ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
                   : undefined
               }
             />
