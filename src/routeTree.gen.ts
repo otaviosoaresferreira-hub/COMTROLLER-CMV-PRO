@@ -22,7 +22,9 @@ import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as FornecedoresRouteImport } from './routes/fornecedores'
 import { Route as FichasRouteImport } from './routes/fichas'
 import { Route as EquipeRouteImport } from './routes/equipe'
+import { Route as DreRouteImport } from './routes/dre'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as CategoriasRouteImport } from './routes/categorias'
 import { Route as AuditoriasRouteImport } from './routes/auditorias'
@@ -96,9 +98,19 @@ const EquipeRoute = EquipeRouteImport.update({
   path: '/equipe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DreRoute = DreRouteImport.update({
+  id: '/dre',
+  path: '/dre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
   id: '/configuracoes',
   path: '/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChecklistsRoute = ChecklistsRouteImport.update({
+  id: '/checklists',
+  path: '/checklists',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CentralRoute = CentralRouteImport.update({
@@ -143,7 +155,9 @@ export interface FileRoutesByFullPath {
   '/auditorias': typeof AuditoriasRoute
   '/categorias': typeof CategoriasRoute
   '/central': typeof CentralRoute
+  '/checklists': typeof ChecklistsRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/dre': typeof DreRoute
   '/equipe': typeof EquipeRoute
   '/fichas': typeof FichasRoute
   '/fornecedores': typeof FornecedoresRoute
@@ -166,7 +180,9 @@ export interface FileRoutesByTo {
   '/auditorias': typeof AuditoriasRoute
   '/categorias': typeof CategoriasRoute
   '/central': typeof CentralRoute
+  '/checklists': typeof ChecklistsRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/dre': typeof DreRoute
   '/equipe': typeof EquipeRoute
   '/fichas': typeof FichasRoute
   '/fornecedores': typeof FornecedoresRoute
@@ -190,7 +206,9 @@ export interface FileRoutesById {
   '/auditorias': typeof AuditoriasRoute
   '/categorias': typeof CategoriasRoute
   '/central': typeof CentralRoute
+  '/checklists': typeof ChecklistsRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/dre': typeof DreRoute
   '/equipe': typeof EquipeRoute
   '/fichas': typeof FichasRoute
   '/fornecedores': typeof FornecedoresRoute
@@ -215,7 +233,9 @@ export interface FileRouteTypes {
     | '/auditorias'
     | '/categorias'
     | '/central'
+    | '/checklists'
     | '/configuracoes'
+    | '/dre'
     | '/equipe'
     | '/fichas'
     | '/fornecedores'
@@ -238,7 +258,9 @@ export interface FileRouteTypes {
     | '/auditorias'
     | '/categorias'
     | '/central'
+    | '/checklists'
     | '/configuracoes'
+    | '/dre'
     | '/equipe'
     | '/fichas'
     | '/fornecedores'
@@ -261,7 +283,9 @@ export interface FileRouteTypes {
     | '/auditorias'
     | '/categorias'
     | '/central'
+    | '/checklists'
     | '/configuracoes'
+    | '/dre'
     | '/equipe'
     | '/fichas'
     | '/fornecedores'
@@ -285,7 +309,9 @@ export interface RootRouteChildren {
   AuditoriasRoute: typeof AuditoriasRoute
   CategoriasRoute: typeof CategoriasRoute
   CentralRoute: typeof CentralRoute
+  ChecklistsRoute: typeof ChecklistsRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
+  DreRoute: typeof DreRoute
   EquipeRoute: typeof EquipeRoute
   FichasRoute: typeof FichasRoute
   FornecedoresRoute: typeof FornecedoresRoute
@@ -395,11 +421,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EquipeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dre': {
+      id: '/dre'
+      path: '/dre'
+      fullPath: '/dre'
+      preLoaderRoute: typeof DreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/configuracoes': {
       id: '/configuracoes'
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof ConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checklists': {
+      id: '/checklists'
+      path: '/checklists'
+      fullPath: '/checklists'
+      preLoaderRoute: typeof ChecklistsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/central': {
@@ -472,7 +512,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuditoriasRoute: AuditoriasRoute,
   CategoriasRoute: CategoriasRoute,
   CentralRoute: CentralRoute,
+  ChecklistsRoute: ChecklistsRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
+  DreRoute: DreRoute,
   EquipeRoute: EquipeRoute,
   FichasRoute: FichasRoute,
   FornecedoresRoute: FornecedoresRoute,
