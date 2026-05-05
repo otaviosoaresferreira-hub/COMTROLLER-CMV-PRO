@@ -808,6 +808,17 @@ function ProducaoPage() {
         />
       )}
 
+      {presetRecipeId && (
+        <ProductionDialog
+          presetRecipeId={presetRecipeId}
+          hideTrigger
+          open={true}
+          onOpenChange={(v) => {
+            if (!v) setPresetRecipeId(null);
+          }}
+        />
+      )}
+
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
