@@ -1,5 +1,11 @@
 import { useMemo } from "react";
-import { Check, ChevronsUpDown, Trash2, Sparkles, Link2 } from "lucide-react";
+import { Check, ChevronsUpDown, Trash2, Sparkles, Link2, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
