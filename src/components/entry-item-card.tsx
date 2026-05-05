@@ -432,39 +432,39 @@ export function EntryItemCard({
 
       {/* MOTOR DE CÁLCULOS */}
       <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Cálculo de entrada
-        </p>
+        <div className="mb-2 flex items-center gap-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Cálculo de entrada
+          </p>
+          <HelpTip text="Calculadora Inteligente: Altere qualquer campo para que o sistema ajuste os outros automaticamente." />
+        </div>
 
         {t.sharedActive ? (
-          // SHARED: Unidades × Peso Base = Total kg
+          // SHARED: Qtd × Peso do Lote = Total kg (bidirecional)
           <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
             <FormulaInput
               label="Qtd. Unidades"
               value={data.sharedUnits}
-              onChange={(v) => onChange({ sharedUnits: v.replace(/[^\d]/g, "") })}
+              onChange={(v) =>
+                onChange(applyBidirectional(data, "units", v.replace(/[^\d]/g, "")))
+              }
               step="1"
               inputMode="numeric"
               suffix="un"
             />
             <Op>×</Op>
             <FormulaInput
-              label={`Peso Base (${packLabel})`}
-              value={
-                t.standardKg > 0 && data.mode === "existing"
-                  ? fmt3(t.standardKg)
-                  : data.newStandardWeightKg
-              }
-              onChange={(v) => onChange({ newStandardWeightKg: v })}
+              label={`Peso do Lote Atual (${packLabel})`}
+              value={data.newStandardWeightKg}
+              onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
               step="0.001"
               suffix="kg"
-              readOnly={data.mode === "existing"}
             />
             <Op>=</Op>
             <FormulaInput
               label="Peso Total"
               value={data.sharedTotalKg}
-              onChange={(v) => onChange({ sharedTotalKg: v })}
+              onChange={(v) => onChange(applyBidirectional(data, "total", v))}
               step="0.001"
               suffix="kg"
               highlight
