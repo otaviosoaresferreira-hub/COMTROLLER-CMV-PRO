@@ -1,0 +1,2 @@
+ALTER TABLE public.sales_item_mappings ADD COLUMN IF NOT EXISTS external_code text;
+CREATE UNIQUE INDEX IF NOT EXISTS sales_item_mappings_org_code_uniq ON public.sales_item_mappings(org_id, external_code) WHERE external_code IS NOT NULL;

@@ -83,20 +83,52 @@ const fmtBRL = (n: number) =>
 type Mapping = {
   id: string;
   source_name: string;
+  external_code: string | null;
   recipe_id: string;
   multiplier: number;
 };
 
 type Unmapped = {
-  source_name: string;
+  /** Código original do CSV (ex.: "90", "126_712"). Vazio se não houver. */
+  source_code: string;
+  /** Nome curto exibido (parte antes do primeiro "-" do campo Produto). */
+  display_name: string;
   qty: number;
+  /** Receita bruta apurada para esse código. */
+  revenue: number;
 };
+
+/** Extrai o "nome curto" do produto: tudo antes do primeiro " - ". */
+function shortName(raw: string): string {
+  if (!raw) return "";
+  const idx = raw.indexOf(" - ");
+  if (idx < 0) {
+    const dash = raw.indexOf("-");
+    return (dash > 0 ? raw.slice(0, dash) : raw).trim();
+  }
+  return raw.slice(0, idx).trim();
+}
+
+/** Parser de valor monetário BR ("R$ 36,90", "R$ -41,19"). */
+function parseMoneyBR(raw: string): number {
+  if (!raw) return 0;
+  const s = raw.replace(/[^0-9,.\-]/g, "").trim();
+  if (!s) return 0;
+  let n = s;
+  if (n.includes(",") && n.includes(".")) n = n.replace(/\./g, "").replace(",", ".");
+  else if (n.includes(",")) n = n.replace(",", ".");
+  const v = Number(n);
+  return Number.isFinite(v) ? v : 0;
+}
 
 interface Props {
   sales: SalesMap;
   onSalesChange: (m: SalesMap) => void;
   /** Local da operação atual — usado p/ buscar overrides de preço por unidade. */
   locationId?: string;
+  /** Callback opcional para receber o valor de descontos/despesas globais
+   *  (linhas com Cod === "---" no CSV do ConnectPlug). */
+  onGlobalDiscountChange?: (value: number) => void;
 }
 
 // Parser CSV simples e tolerante (suporta `,`, `;` e `\t` como separador,
@@ -134,8 +166,8 @@ function parseCsv(text: string): string[][] {
   return out;
 }
 
-// Detecta colunas: produto/descrição e quantidade.
-function detectColumns(header: string[]): { name: number; qty: number } {
+// Detecta colunas: código, produto/descrição, quantidade e valor (faturamento).
+function detectColumns(header: string[]): { code: number; name: number; qty: number; revenue: number } {
   const norm = header.map((h) =>
     h
       .toLowerCase()
@@ -143,17 +175,27 @@ function detectColumns(header: string[]): { name: number; qty: number } {
       .replace(/[\u0300-\u036f]/g, "")
       .trim(),
   );
+  const codeKeys = ["cod", "codigo", "code", "sku"];
   const nameKeys = ["produto", "nome", "descricao", "item", "mercadoria"];
   const qtyKeys = ["quantidade", "qtd", "qtde", "qty", "vendido", "vendidos", "qt"];
+  // Coluna "Valor" (faturamento total da linha) — preferimos sobre "Valor un".
+  const revenueKeys = ["valor total", "faturamento", "total"];
+  let codeIdx = norm.findIndex((h) => codeKeys.some((k) => h === k));
   let nameIdx = norm.findIndex((h) => nameKeys.some((k) => h === k || h.includes(k)));
   let qtyIdx = norm.findIndex((h) => qtyKeys.some((k) => h === k || h.includes(k)));
+  let revIdx = norm.findIndex((h) => revenueKeys.some((k) => h === k));
+  if (revIdx < 0) {
+    // ConnectPlug: cabeçalho exato "valor" (depois de "valor un"). Pega o
+    // último "valor" encontrado quando há múltiplos.
+    const all = norm.map((h, i) => (h === "valor" ? i : -1)).filter((i) => i >= 0);
+    revIdx = all.length > 0 ? all[all.length - 1] : -1;
+  }
   if (nameIdx < 0) nameIdx = 0;
   if (qtyIdx < 0) {
-    // Heurística: pega a primeira coluna numérica que NÃO seja a de nome
     qtyIdx = norm.findIndex((_, i) => i !== nameIdx);
     if (qtyIdx < 0) qtyIdx = 1;
   }
-  return { name: nameIdx, qty: qtyIdx };
+  return { code: codeIdx, name: nameIdx, qty: qtyIdx, revenue: revIdx };
 }
 
 function parseQty(raw: string): number {
@@ -169,12 +211,14 @@ function parseQty(raw: string): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
+export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDiscountChange }: Props) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [unmapped, setUnmapped] = useState<Unmapped[]>([]);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [globalDiscount, setGlobalDiscount] = useState(0);
+
 
   const { data } = useQuery({
     queryKey: ["sales-entry-data", locationId ?? null],
@@ -193,7 +237,7 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
           .eq("is_free", false)
           .order("name"),
         supabase.from("categories").select("id,name").order("name"),
-        supabase.from("sales_item_mappings").select("id,source_name,recipe_id,multiplier"),
+        supabase.from("sales_item_mappings").select("id,source_name,external_code,recipe_id,multiplier"),
         locationId
           ? supabase
               .from("recipe_unit_overrides")
@@ -234,7 +278,14 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
     return m;
   }, [data]);
 
-  // Index para lookup rápido por nome (lowercased).
+  // Index para lookup rápido por código (preferido) e por nome (fallback).
+  const mappingByCode = useMemo(() => {
+    const m = new Map<string, Mapping>();
+    data?.mappings.forEach((x) => {
+      if (x.external_code) m.set(String(x.external_code).trim().toLowerCase(), x);
+    });
+    return m;
+  }, [data]);
   const mappingByName = useMemo(() => {
     const m = new Map<string, Mapping>();
     data?.mappings.forEach((x) => m.set(x.source_name.trim().toLowerCase(), x));
@@ -280,45 +331,78 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
         toast.error("CSV vazio ou sem dados além do cabeçalho.");
         return;
       }
-      const { name: nameIdx, qty: qtyIdx } = detectColumns(rows[0]);
-      const accum = new Map<string, number>(); // source_name (lowercased) -> qty total
-      const display = new Map<string, string>(); // lowercased -> nome original
+      const cols = detectColumns(rows[0]);
+      // Acumula por chave: código (preferido) ou nome curto.
+      type Acc = { code: string; display: string; qty: number; revenue: number };
+      const accum = new Map<string, Acc>();
+      let discountTotal = 0;
+
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        const rawName = (row[nameIdx] ?? "").trim();
-        const rawQty = (row[qtyIdx] ?? "").trim();
-        if (!rawName) continue;
+        const rawCode = cols.code >= 0 ? (row[cols.code] ?? "").trim() : "";
+        const rawName = (row[cols.name] ?? "").trim();
+        const rawQty = (row[cols.qty] ?? "").trim();
+        const rawRev = cols.revenue >= 0 ? (row[cols.revenue] ?? "").trim() : "";
+        if (!rawName && !rawCode) continue;
+
+        // Linha de despesas/descontos/frete: código "---". Captura "Valor"
+        // (que pode ser negativo, ex.: "R$ -41,19") como desconto global.
+        if (rawCode === "---" || rawCode === "—" || /despesas|descontos|frete/i.test(rawName)) {
+          discountTotal += parseMoneyBR(rawRev || rawQty);
+          continue;
+        }
+
         const q = parseQty(rawQty);
-        if (q <= 0) continue;
-        const key = rawName.toLowerCase();
-        accum.set(key, (accum.get(key) ?? 0) + q);
-        if (!display.has(key)) display.set(key, rawName);
+        const rev = parseMoneyBR(rawRev);
+        if (q <= 0 && rev === 0) continue;
+
+        // Chave: código quando existir; senão, nome curto normalizado.
+        const display = shortName(rawName) || rawName || rawCode;
+        const key = rawCode
+          ? `c:${rawCode.toLowerCase()}`
+          : `n:${display.toLowerCase()}`;
+        const cur = accum.get(key) ?? { code: rawCode, display, qty: 0, revenue: 0 };
+        cur.qty += q;
+        cur.revenue += rev;
+        // Garante o nome curto (ignora variações de pedido).
+        if (!cur.display) cur.display = display;
+        accum.set(key, cur);
       }
-      if (accum.size === 0) {
+
+      if (accum.size === 0 && discountTotal === 0) {
         toast.error("Não consegui identificar produtos e quantidades.");
         return;
       }
 
-      // Aplica vínculos existentes; coleta os não mapeados.
+      // Aplica vínculos existentes (preferindo código), coleta os não mapeados.
       const newSales = new Map(sales);
       const pending: Unmapped[] = [];
-      accum.forEach((qty, key) => {
-        const map = mappingByName.get(key);
+      accum.forEach((acc) => {
+        const codeKey = acc.code ? acc.code.toLowerCase() : "";
+        const map =
+          (codeKey && mappingByCode.get(codeKey)) ||
+          mappingByName.get(acc.display.toLowerCase());
         if (map) {
           const recId = map.recipe_id;
           const mult = Number(map.multiplier || 1);
-          newSales.set(recId, (newSales.get(recId) ?? 0) + qty * mult);
+          newSales.set(recId, (newSales.get(recId) ?? 0) + acc.qty * mult);
         } else {
-          pending.push({ source_name: display.get(key) ?? key, qty });
+          pending.push({
+            source_code: acc.code,
+            display_name: acc.display,
+            qty: acc.qty,
+            revenue: acc.revenue,
+          });
         }
       });
       onSalesChange(newSales);
+      setGlobalDiscount(discountTotal);
+      onGlobalDiscountChange?.(discountTotal);
       const importedCount = accum.size - pending.length;
       toast.success(
         `${importedCount} ${importedCount === 1 ? "produto importado" : "produtos importados"}` +
-          (pending.length > 0
-            ? ` · ${pending.length} aguardam vínculo`
-            : ""),
+          (pending.length > 0 ? ` · ${pending.length} aguardam vínculo` : "") +
+          (discountTotal !== 0 ? ` · descontos ${fmtBRL(discountTotal)}` : ""),
       );
       if (pending.length > 0) {
         setUnmapped(pending);
@@ -334,14 +418,35 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
   // ============= MAPPING MUTATION =============
 
   const saveMapping = useMutation({
-    mutationFn: async ({ source_name, recipe_id }: { source_name: string; recipe_id: string }) => {
-      const { error } = await supabase
-        .from("sales_item_mappings")
-        .upsert(
-          { source_name, recipe_id, multiplier: 1 },
-          { onConflict: "org_id,source_name" },
-        );
-      if (error) throw error;
+    mutationFn: async ({
+      source_name,
+      external_code,
+      recipe_id,
+    }: {
+      source_name: string;
+      external_code: string | null;
+      recipe_id: string;
+    }) => {
+      // Se temos código, fazemos upsert por (org_id, external_code) usando o
+      // índice único parcial criado na migration. Caso contrário, caímos no
+      // upsert legado por (org_id, source_name).
+      if (external_code) {
+        const { error } = await supabase
+          .from("sales_item_mappings")
+          .upsert(
+            { source_name, external_code, recipe_id, multiplier: 1 },
+            { onConflict: "org_id,external_code" },
+          );
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("sales_item_mappings")
+          .upsert(
+            { source_name, recipe_id, multiplier: 1 },
+            { onConflict: "org_id,source_name" },
+          );
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sales-entry-data"] });
@@ -349,12 +454,22 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const linkUnmapped = (sourceName: string, qty: number, recipeId: string) => {
-    saveMapping.mutate({ source_name: sourceName, recipe_id: recipeId });
+  const linkUnmapped = (u: Unmapped, recipeId: string) => {
+    saveMapping.mutate({
+      source_name: u.display_name,
+      external_code: u.source_code || null,
+      recipe_id: recipeId,
+    });
     const newSales = new Map(sales);
-    newSales.set(recipeId, (newSales.get(recipeId) ?? 0) + qty);
+    newSales.set(recipeId, (newSales.get(recipeId) ?? 0) + u.qty);
     onSalesChange(newSales);
-    setUnmapped((prev) => prev.filter((u) => u.source_name !== sourceName));
+    setUnmapped((prev) =>
+      prev.filter((x) =>
+        u.source_code
+          ? x.source_code !== u.source_code
+          : x.display_name !== u.display_name,
+      ),
+    );
   };
 
   // ============= MANUAL ENTRY =============
@@ -411,6 +526,15 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
           {totalRevenue > 0 && (
             <Badge variant="default" className="tabular-nums">
               {fmtBRL(totalRevenue)}
+            </Badge>
+          )}
+          {globalDiscount !== 0 && (
+            <Badge
+              variant="outline"
+              className="tabular-nums border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+              title="Despesas/descontos/frete capturados da linha --- do CSV"
+            >
+              Descontos {fmtBRL(globalDiscount)}
             </Badge>
           )}
           {unmapped.length > 0 && (
@@ -496,18 +620,26 @@ export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
             ) : (
               unmapped.map((u) => (
                 <div
-                  key={u.source_name}
+                  key={u.source_code || u.display_name}
                   className="flex items-center gap-2 rounded-md border border-border bg-background p-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{u.source_name}</p>
+                    <div className="flex items-center gap-2">
+                      {u.source_code && (
+                        <Badge variant="outline" className="text-[10px] tabular-nums">
+                          #{u.source_code}
+                        </Badge>
+                      )}
+                      <p className="truncate text-sm font-medium">{u.display_name}</p>
+                    </div>
                     <p className="text-[10px] text-muted-foreground tabular-nums">
                       {u.qty.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} vendido(s)
+                      {u.revenue > 0 ? ` · ${fmtBRL(u.revenue)}` : ""}
                     </p>
                   </div>
                   <RecipePicker
                     recipes={data?.recipes ?? []}
-                    onPick={(rid) => linkUnmapped(u.source_name, u.qty, rid)}
+                    onPick={(rid) => linkUnmapped(u, rid)}
                   />
                 </div>
               ))
