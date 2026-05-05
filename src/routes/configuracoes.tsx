@@ -251,3 +251,49 @@ function ConfiguracoesPage() {
     </div>
   );
 }
+
+interface ColorPickerRowProps {
+  label: string;
+  description?: string;
+  value: string;
+  onChange: (hex: string) => void;
+}
+
+function ColorPickerRow({ label, description, value, onChange }: ColorPickerRowProps) {
+  const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000";
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+      </div>
+      <div className="flex items-center gap-2">
+        <Input
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            onChange(v.startsWith("#") ? v : `#${v}`);
+          }}
+          className="h-9 w-28 font-mono text-xs uppercase"
+          maxLength={7}
+          placeholder="#000000"
+        />
+        <label
+          className={cn(
+            "relative inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border shadow-sm ring-offset-background transition hover:ring-2 hover:ring-primary/40",
+          )}
+          style={{ background: safe }}
+          title="Escolher cor"
+        >
+          <input
+            type="color"
+            value={safe}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
