@@ -693,6 +693,8 @@ function FormulaInput({
   suffix,
   readOnly,
   highlight,
+  displayDecimals,
+  hint,
 }: {
   label: string;
   value: string;
@@ -702,21 +704,37 @@ function FormulaInput({
   suffix?: string;
   readOnly?: boolean;
   highlight?: boolean;
+  /** Máscara: nº de casas exibidas no Input (não altera o estado). */
+  displayDecimals?: number;
+  /** Texto secundário pequeno embaixo do label (ex.: "0,180 kg/un"). */
+  hint?: string;
 }) {
+  const [focused, setFocused] = (require("react") as typeof import("react")).useState(false);
+  // Quando focado, mostra o valor cru (precisão total). Sem foco, aplica máscara.
+  const display =
+    focused || displayDecimals == null ? value : maskDec(value, displayDecimals);
   return (
     <div className="space-y-1">
-      <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </Label>
+      <div className="flex items-baseline justify-between gap-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </Label>
+        {hint && (
+          <span className="text-[10px] tabular-nums text-muted-foreground/80">
+            {hint}
+          </span>
+        )}
+      </div>
       <div className="relative">
         <Input
-          type="number"
+          type="text"
           inputMode={inputMode}
           step={step}
-          min="0"
           placeholder="0"
-          value={value}
+          value={display}
           readOnly={readOnly}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
             "pr-9 tabular-nums",
