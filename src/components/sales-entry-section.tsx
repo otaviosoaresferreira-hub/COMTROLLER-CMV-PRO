@@ -211,12 +211,14 @@ function parseQty(raw: string): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-export function SalesEntrySection({ sales, onSalesChange, locationId }: Props) {
+export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDiscountChange }: Props) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [unmapped, setUnmapped] = useState<Unmapped[]>([]);
   const [mappingOpen, setMappingOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [globalDiscount, setGlobalDiscount] = useState(0);
+
 
   const { data } = useQuery({
     queryKey: ["sales-entry-data", locationId ?? null],
