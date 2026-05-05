@@ -63,6 +63,8 @@ interface Props {
   /** Se preenchido, o dialog abre em modo EDIÇÃO de uma produção existente.
    *  Ao confirmar, estorna os movimentos originais e relança os novos. */
   editMovementId?: string;
+  /** Pré-seleciona uma receita ao abrir (apenas modo criação). */
+  presetRecipeId?: string;
 }
 
 type ItemRow = {
