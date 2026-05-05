@@ -13,6 +13,7 @@ import {
   type LocationTreeNode,
 } from "@/lib/location-hierarchy";
 import { cn } from "@/lib/utils";
+import { DiscrepancyPanel } from "@/components/discrepancy-panel";
 
 export const Route = createFileRoute("/inventario")({
   head: () => ({
