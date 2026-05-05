@@ -690,6 +690,13 @@ export function TransferDialog({
                       )}
                     </p>
                   )}
+                  {selectedItem && (
+                    <BatchPreviewList
+                      itemId={selectedItem.id}
+                      itemBaseUnit={(selectedItem.unit || "un").toLowerCase() === "kg" ? "kg" : "un"}
+                      sharedUnit={!!selectedItem.shared_unit_enabled}
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
