@@ -515,6 +515,93 @@ function ProducaoPage() {
           </div>
         </section>
 
+        {/* Alertas inteligentes de produção */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Alertas de produção
+              </p>
+              {alerts.length > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                  {alerts.length}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <label className="text-[11px] text-muted-foreground">Cobertura</label>
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={coverageDays}
+                onChange={(e) => setCoverageDays(Math.max(1, Number(e.target.value) || 1))}
+                className="h-7 w-16 text-xs tabular-nums"
+              />
+              <span className="text-[11px] text-muted-foreground">dias</span>
+            </div>
+          </div>
+
+          {alerts.length === 0 ? (
+            <div className="rounded-xl border border-border/60 bg-card/50 p-3 text-center text-xs text-muted-foreground">
+              Nenhum alerta. Estoques de produção dentro da cobertura desejada.
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {alerts.map((a) => {
+                const tone =
+                  a.kind === "blocked"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : a.kind === "urgent"
+                      ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200";
+                const Icon =
+                  a.kind === "blocked" ? XOctagon : a.kind === "urgent" ? AlertTriangle : Timer;
+                const label =
+                  a.kind === "blocked" ? "Bloqueado" : a.kind === "urgent" ? "Urgente" : "Aviso";
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => {
+                      if (a.kind === "blocked") {
+                        toast.warning(a.message);
+                        return;
+                      }
+                      setPresetRecipeId(a.recipeId);
+                    }}
+                    className={cn(
+                      "group flex items-start gap-3 rounded-xl border p-3 text-left shadow-sm transition active:scale-[0.99]",
+                      tone,
+                    )}
+                  >
+                    <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="h-4 border-current px-1.5 text-[9px] font-bold uppercase tracking-wide"
+                        >
+                          {label}
+                        </Badge>
+                        <p className="truncate text-sm font-semibold">{a.title}</p>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-snug opacity-90">{a.message}</p>
+                      <p className="mt-1 text-[10px] uppercase tracking-wide opacity-60">
+                        {a.kind === "blocked"
+                          ? "Verifique insumos no Estoque Central"
+                          : "Toque para iniciar produção"}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {/* Summary */}
         {isManager && filteredRows.length > 0 && (
           <section className="grid grid-cols-2 gap-3">
