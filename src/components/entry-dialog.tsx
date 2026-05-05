@@ -2358,13 +2358,11 @@ function ManualEntryTab({
       {/* Lista de itens */}
       <div className="space-y-3">
         {rows.map((r, idx) => (
-          <ManualRowEditor
+          <EntryItemCard
             key={r.uid}
             index={idx}
-            row={r}
+            data={r}
             items={items}
-            categories={categories}
-            isManager={isManager}
             canRemove={rows.length > 1}
             onChange={(patch) => updateRow(r.uid, patch)}
             onRemove={() => removeRow(r.uid)}
