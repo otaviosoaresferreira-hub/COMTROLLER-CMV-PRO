@@ -459,12 +459,26 @@ export function EntryItemCard({
                   }}
                   className="justify-start"
                 >
-                  <ToggleGroupItem value="fix" size="sm" className="h-9 px-3 text-xs">
-                    Peso Fixo
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="var" size="sm" className="h-9 px-3 text-xs">
-                    Peso Variável
-                  </ToggleGroupItem>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="fix" size="sm" className="h-9 px-3 text-xs">
+                        Peso Fixo
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                      Use para itens com peso padronizado (ex: Latas, Garrafas). O sistema avisará se houver divergência.
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="var" size="sm" className="h-9 px-3 text-xs">
+                        Peso Variável
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                      Use para itens pesados na entrega (ex: Carnes, Hortis). O sistema calculará o custo médio real do lote.
+                    </TooltipContent>
+                  </Tooltip>
                 </ToggleGroup>
               </div>
               <div className="space-y-1">
