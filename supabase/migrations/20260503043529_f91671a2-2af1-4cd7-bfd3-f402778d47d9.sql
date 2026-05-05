@@ -1,0 +1,175 @@
+
+-- Move items linked to the singular "Produção Interna" to the plural "Produções Internas",
+-- merge item_categories, then delete the duplicate singular categories.
+ALTER TABLE public.categories DISABLE TRIGGER USER;
+ALTER TABLE public.items DISABLE TRIGGER USER;
+ALTER TABLE public.item_categories DISABLE TRIGGER USER;
+
+DO $$
+DECLARE
+  src record;
+  dst_id uuid;
+BEGIN
+  FOR src IN
+    SELECT id, org_id FROM public.categories WHERE name = 'Produção Interna'
+  LOOP
+    SELECT id INTO dst_id FROM public.categories
+      WHERE org_id = src.org_id AND name = 'Produções Internas' LIMIT 1;
+    IF dst_id IS NULL THEN
+      UPDATE public.categories SET name = 'Produções Internas' WHERE id = src.id;
+      CONTINUE;
+    END IF;
+    -- Reaponta items.category_id
+    UPDATE public.items SET category_id = dst_id
+      WHERE org_id = src.org_id AND category_id = src.id;
+    -- Move tags item_categories evitando duplicatas
+    INSERT INTO public.item_categories (item_id, category_id, org_id)
+      SELECT ic.item_id, dst_id, ic.org_id
+        FROM public.item_categories ic
+       WHERE ic.category_id = src.id
+         AND NOT EXISTS (
+           SELECT 1 FROM public.item_categories ic2
+            WHERE ic2.item_id = ic.item_id AND ic2.category_id = dst_id
+         );
+    DELETE FROM public.item_categories WHERE category_id = src.id;
+    -- Limpa subcategorias filhas (se houver) reapontando o parent_id
+    UPDATE public.categories SET parent_id = dst_id WHERE parent_id = src.id;
+    -- Remove ocultação se existir
+    DELETE FROM public.hidden_system_categories WHERE category_id = src.id;
+    DELETE FROM public.categories WHERE id = src.id;
+  END LOOP;
+END $$;
+
+ALTER TABLE public.categories ENABLE TRIGGER USER;
+ALTER TABLE public.items ENABLE TRIGGER USER;
+ALTER TABLE public.item_categories ENABLE TRIGGER USER;
+
+-- Atualiza funções de setup para nunca recriar a singular
+CREATE OR REPLACE FUNCTION public.setup_new_organization(_org_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  factory_names text[] := ARRAY[
+    'Proteínas','Estoque Seco','Hortifruti','Bebidas',
+    'Laticínios','Limpeza','Produções Internas','Sem Categoria'
+  ];
+  cat_name text;
+  sistema_cat_id uuid;
+  water_exists boolean;
+  central_exists boolean;
+BEGIN
+  FOREACH cat_name IN ARRAY factory_names LOOP
+    INSERT INTO public.categories (org_id, name, is_system)
+    SELECT _org_id, cat_name, true
+    WHERE NOT EXISTS (
+      SELECT 1 FROM public.categories WHERE org_id = _org_id AND name = cat_name
+    );
+  END LOOP;
+
+  INSERT INTO public.categories (org_id, name, is_system)
+  SELECT _org_id, 'Sistema', true
+  WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE org_id = _org_id AND name = 'Sistema');
+
+  SELECT id INTO sistema_cat_id FROM public.categories
+    WHERE org_id = _org_id AND name = 'Sistema' LIMIT 1;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.locations
+    WHERE org_id = _org_id AND lower(trim(name)) = 'estoque central'
+  ) INTO central_exists;
+
+  IF NOT central_exists THEN
+    INSERT INTO public.locations (org_id, name, is_system, operation_type)
+    VALUES (_org_id, 'Estoque Central', true, 'a_la_carte');
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.items
+    WHERE org_id = _org_id
+      AND lower(name) IN ('água (produção)','agua (producao)','água','agua')
+  ) INTO water_exists;
+
+  IF NOT water_exists THEN
+    INSERT INTO public.items (
+      org_id, name, unit, category_id,
+      cost_price, sale_price, min_stock,
+      is_active, is_system, is_free
+    )
+    VALUES (
+      _org_id, 'Água (Produção)', 'kg', sistema_cat_id,
+      0, 0, 0, true, true, true
+    );
+  END IF;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.reorganize_org_categories(_org_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  official text[] := ARRAY[
+    'Proteínas','Estoque Seco','Hortifruti','Bebidas',
+    'Laticínios','Limpeza','Produções Internas','Sem Categoria','Sistema'
+  ];
+  cat_name text;
+  sem_cat_id uuid;
+  rename_map text[][] := ARRAY[
+    ARRAY['Carnes','Proteínas'],
+    ARRAY['Secos','Estoque Seco'],
+    ARRAY['Sub-receitas','Produções Internas'],
+    ARRAY['Produção Interna','Produções Internas']
+  ];
+  pair text[];
+  src_id uuid;
+  dst_id uuid;
+BEGIN
+  FOREACH pair SLICE 1 IN ARRAY rename_map LOOP
+    SELECT id INTO src_id FROM public.categories
+      WHERE org_id = _org_id AND name = pair[1] LIMIT 1;
+    IF src_id IS NOT NULL THEN
+      SELECT id INTO dst_id FROM public.categories
+        WHERE org_id = _org_id AND name = pair[2] LIMIT 1;
+      IF dst_id IS NULL THEN
+        UPDATE public.categories SET name = pair[2] WHERE id = src_id;
+      ELSE
+        UPDATE public.items SET category_id = dst_id
+          WHERE org_id = _org_id AND category_id = src_id;
+        DELETE FROM public.categories WHERE id = src_id;
+      END IF;
+    END IF;
+  END LOOP;
+
+  FOREACH cat_name IN ARRAY official LOOP
+    INSERT INTO public.categories (org_id, name, is_system)
+    SELECT _org_id, cat_name, true
+    WHERE NOT EXISTS (
+      SELECT 1 FROM public.categories WHERE org_id = _org_id AND name = cat_name
+    );
+  END LOOP;
+
+  SELECT id INTO sem_cat_id FROM public.categories
+    WHERE org_id = _org_id AND name = 'Sem Categoria' LIMIT 1;
+
+  UPDATE public.items i
+     SET category_id = sem_cat_id
+   WHERE i.org_id = _org_id
+     AND i.category_id IS NOT NULL
+     AND EXISTS (
+       SELECT 1 FROM public.categories c
+        WHERE c.id = i.category_id
+          AND c.org_id = _org_id
+          AND c.name <> ALL(official)
+     );
+
+  DELETE FROM public.categories c
+   WHERE c.org_id = _org_id
+     AND c.name <> ALL(official)
+     AND NOT EXISTS (SELECT 1 FROM public.items i WHERE i.category_id = c.id);
+END;
+$function$;

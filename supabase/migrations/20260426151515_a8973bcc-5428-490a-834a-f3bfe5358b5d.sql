@@ -1,0 +1,1 @@
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS operation_type text NOT NULL DEFAULT 'a_la_carte';

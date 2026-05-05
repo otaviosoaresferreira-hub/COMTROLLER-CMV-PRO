@@ -1,0 +1,1 @@
+ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS lead_time_days integer NOT NULL DEFAULT 2;

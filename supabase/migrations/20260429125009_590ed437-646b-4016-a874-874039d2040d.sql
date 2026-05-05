@@ -1,0 +1,1 @@
+ALTER TABLE public.items ALTER COLUMN cost_price TYPE numeric(18,6);
