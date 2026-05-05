@@ -675,8 +675,18 @@ export function EntryItemCard({
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Custo unitário</Label>
-            <div className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-semibold tabular-nums">
-              {t.unitCost > 0 ? `${fmtBRL(t.unitCost)} / ${totalLabel}` : "—"}
+            <div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-muted/50 px-3 text-sm font-semibold tabular-nums">
+              <span>{t.unitCost > 0 ? `${fmtBRL(t.unitCost)} / ${totalLabel}` : "—"}</span>
+              {t.sharedActive && t.totalValue > 0 && (
+                <span className="flex flex-col items-end text-[10px] font-normal leading-tight text-muted-foreground">
+                  {t.totalKg > 0 && (
+                    <span>{fmtBRL(t.totalValue / t.totalKg)}/kg</span>
+                  )}
+                  {t.units > 0 && (
+                    <span>{fmtBRL(t.totalValue / t.units)}/un</span>
+                  )}
+                </span>
+              )}
             </div>
           </div>
         </div>
