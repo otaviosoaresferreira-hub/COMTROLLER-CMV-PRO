@@ -9,6 +9,7 @@ import { CalcInput } from "@/components/calc-input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { findCentralLocation } from "@/lib/stock-constants";
+import { findRecentlyActiveLocations } from "@/lib/inventory-discrepancies";
 import {
   AlertDialog,
   AlertDialogAction,
