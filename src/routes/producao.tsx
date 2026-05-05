@@ -295,6 +295,7 @@ function ProducaoPage() {
     return out.sort((a, b) => order[a.kind] - order[b.kind]);
   }, [alertsData, coverageDays]);
 
+  const rows = useMemo(() => {
     if (!data) return [];
     const parseBR = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
     return data.movs.map((m) => {
