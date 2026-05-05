@@ -897,6 +897,8 @@ function XmlImportTab({
           lot_number: res.row.lotNumber?.trim() || number || null,
           invoice_id: inv.id,
           movement_id: mov?.id ?? null,
+          // Snapshot da regra Fixo/Variável no momento da entrada — imutável.
+          weight_variable_at_entry: res.sharedActiveOnTarget ? !!res.row.newWeightVariable : false,
           note: `NF ${number || "—"}`,
         });
         if (eb) throw eb;
