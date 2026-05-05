@@ -108,7 +108,15 @@ export type Database = {
           xml_unit?: string | null
           xml_unit_price?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoices: {
         Row: {
