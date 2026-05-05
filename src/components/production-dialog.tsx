@@ -372,7 +372,7 @@ export function ProductionDialog({
   // Reset on open (modo criação). Em modo edição, deixamos o efeito específico abaixo popular.
   useEffect(() => {
     if (open && !isEditMode) {
-      setRecipeId("");
+      setRecipeId(presetRecipeId ?? "");
       setLines([]);
       setYieldQty("");
       setYieldKg("");
@@ -391,7 +391,7 @@ export function ProductionDialog({
       userEditedUnRef.current = false;
       manualLineEditsRef.current.clear();
     }
-  }, [open, defaultLocationId, central, data, isEditMode]);
+  }, [open, defaultLocationId, central, data, isEditMode, presetRecipeId]);
 
   // Em modo edição: quando temos data + editData, encontra a receita pelo nome,
   // monta as linhas a partir dos movimentos production_out e preenche o rendimento.
