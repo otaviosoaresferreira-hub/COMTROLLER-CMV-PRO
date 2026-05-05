@@ -134,6 +134,8 @@ function ProducaoPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("week");
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [coverageDays, setCoverageDays] = useState<number>(3);
+  const [presetRecipeId, setPresetRecipeId] = useState<string | null>(null);
 
   const deleteProduction = useMutation({
     mutationFn: async (movementId: string) => {
