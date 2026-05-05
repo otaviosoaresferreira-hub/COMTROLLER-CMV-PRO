@@ -1,5 +1,11 @@
 import { useMemo } from "react";
-import { Check, ChevronsUpDown, Trash2, Sparkles, Link2 } from "lucide-react";
+import { Check, ChevronsUpDown, Trash2, Sparkles, Link2, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +80,10 @@ export type EntryCardData = {
   // Lote — Unidade Compartilhada
   sharedUnits: string;
   sharedTotalKg: string;
+  /** Último campo SHARED tocado pelo usuário ("units" | "lot" | "total"). */
+  sharedLastEdited?: "units" | "lot" | "total";
+  /** Penúltimo campo tocado — usado como segundo input no cálculo bidirecional. */
+  sharedPrevEdited?: "units" | "lot" | "total";
 
   // Rodapé
   expiryDate: string;
@@ -112,6 +122,8 @@ export function makeBlankEntryCard(): EntryCardData {
     totalValue: "",
     sharedUnits: "",
     sharedTotalKg: "",
+    sharedLastEdited: undefined,
+    sharedPrevEdited: undefined,
     expiryDate: "",
     lotNumber: "",
   };
@@ -183,6 +195,57 @@ export function computeEntryTotals(
   };
 }
 
+/**
+ * Calculadora bidirecional para o bloco SHARED:
+ * Qtd × Peso do Lote = Peso Total.
+ * Mantém os dois últimos campos editados como "âncoras" e recalcula o terceiro.
+ */
+export function applyBidirectional(
+  data: EntryCardData,
+  field: "units" | "lot" | "total",
+  rawValue: string,
+): Partial<EntryCardData> {
+  const patch: Partial<EntryCardData> = {};
+  if (field === "units") patch.sharedUnits = rawValue;
+  if (field === "lot") patch.newStandardWeightKg = rawValue;
+  if (field === "total") patch.sharedTotalKg = rawValue;
+
+  const prev = data.sharedLastEdited;
+  const newPrev = prev && prev !== field ? prev : data.sharedPrevEdited;
+  patch.sharedLastEdited = field;
+  patch.sharedPrevEdited = newPrev;
+
+  const valUnits =
+    field === "units" ? parseDec(rawValue) : parseDec(data.sharedUnits);
+  const valLot =
+    field === "lot" ? parseDec(rawValue) : parseDec(data.newStandardWeightKg);
+  const valTotal =
+    field === "total" ? parseDec(rawValue) : parseDec(data.sharedTotalKg);
+
+  // Os dois campos "âncora" são: o atual (field) e o newPrev.
+  const anchors = new Set<string>([field]);
+  if (newPrev) anchors.add(newPrev);
+
+  // Se temos exatamente os dois âncoras com valores, calcula o terceiro
+  if (anchors.size === 2) {
+    const target = (["units", "lot", "total"] as const).find((k) => !anchors.has(k));
+    if (target === "total" && valUnits > 0 && valLot > 0) {
+      patch.sharedTotalKg = (valUnits * valLot).toLocaleString("en-US", {
+        maximumFractionDigits: 3,
+        useGrouping: false,
+      });
+    } else if (target === "lot" && valUnits > 0 && valTotal > 0) {
+      patch.newStandardWeightKg = (valTotal / valUnits).toLocaleString("en-US", {
+        maximumFractionDigits: 4,
+        useGrouping: false,
+      });
+    } else if (target === "units" && valLot > 0 && valTotal > 0) {
+      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+    }
+  }
+  return patch;
+}
+
 interface Props {
   index: number;
   data: EntryCardData;
@@ -218,6 +281,7 @@ export function EntryItemCard({
   const totalLabel = t.sharedActive ? "kg" : t.effectiveUnit;
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
       {/* Header: índice + estado de vínculo + remover */}
       <div className="flex items-center justify-between gap-2">
@@ -366,6 +430,7 @@ export function EntryItemCard({
               checked={data.newContabilizaCmv}
               onChange={(v) => onChange({ newContabilizaCmv: v })}
               tone={data.newContabilizaCmv ? "ok" : "warn"}
+              tooltip="Ative para itens que compõem o custo dos pratos. Desative para materiais de limpeza ou descartáveis."
             />
             <SwitchTile
               label="Unidade Compartilhada"
@@ -376,6 +441,7 @@ export function EntryItemCard({
                   newUnit: v ? "UN" : data.newUnit,
                 })
               }
+              tooltip="Habilita o controle dual (UN/KG). Ideal para converter peso em porções ou peças em peso líquido, garantindo precisão total no inventário e no custo real."
             />
           </div>
 
@@ -393,12 +459,26 @@ export function EntryItemCard({
                   }}
                   className="justify-start"
                 >
-                  <ToggleGroupItem value="fix" size="sm" className="h-9 px-3 text-xs">
-                    Peso Fixo
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="var" size="sm" className="h-9 px-3 text-xs">
-                    Peso Variável
-                  </ToggleGroupItem>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="fix" size="sm" className="h-9 px-3 text-xs">
+                        Peso Fixo
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                      Use para itens com peso padronizado (ex: Latas, Garrafas). O sistema avisará se houver divergência.
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="var" size="sm" className="h-9 px-3 text-xs">
+                        Peso Variável
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                      Use para itens pesados na entrega (ex: Carnes, Hortis). O sistema calculará o custo médio real do lote.
+                    </TooltipContent>
+                  </Tooltip>
                 </ToggleGroup>
               </div>
               <div className="space-y-1">
@@ -420,39 +500,39 @@ export function EntryItemCard({
 
       {/* MOTOR DE CÁLCULOS */}
       <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Cálculo de entrada
-        </p>
+        <div className="mb-2 flex items-center gap-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Cálculo de entrada
+          </p>
+          <HelpTip text="Calculadora Inteligente: Altere qualquer campo para que o sistema ajuste os outros automaticamente." />
+        </div>
 
         {t.sharedActive ? (
-          // SHARED: Unidades × Peso Base = Total kg
+          // SHARED: Qtd × Peso do Lote = Total kg (bidirecional)
           <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
             <FormulaInput
               label="Qtd. Unidades"
               value={data.sharedUnits}
-              onChange={(v) => onChange({ sharedUnits: v.replace(/[^\d]/g, "") })}
+              onChange={(v) =>
+                onChange(applyBidirectional(data, "units", v.replace(/[^\d]/g, "")))
+              }
               step="1"
               inputMode="numeric"
               suffix="un"
             />
             <Op>×</Op>
             <FormulaInput
-              label={`Peso Base (${packLabel})`}
-              value={
-                t.standardKg > 0 && data.mode === "existing"
-                  ? fmt3(t.standardKg)
-                  : data.newStandardWeightKg
-              }
-              onChange={(v) => onChange({ newStandardWeightKg: v })}
+              label={`Peso do Lote Atual (${packLabel})`}
+              value={data.newStandardWeightKg}
+              onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
               step="0.001"
               suffix="kg"
-              readOnly={data.mode === "existing"}
             />
             <Op>=</Op>
             <FormulaInput
               label="Peso Total"
               value={data.sharedTotalKg}
-              onChange={(v) => onChange({ sharedTotalKg: v })}
+              onChange={(v) => onChange(applyBidirectional(data, "total", v))}
               step="0.001"
               suffix="kg"
               highlight
@@ -536,6 +616,7 @@ export function EntryItemCard({
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
 
@@ -546,11 +627,13 @@ function SwitchTile({
   checked,
   onChange,
   tone = "neutral",
+  tooltip,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   tone?: "neutral" | "ok" | "warn";
+  tooltip?: string;
 }) {
   return (
     <label
@@ -561,7 +644,10 @@ function SwitchTile({
         tone === "neutral" && "border-border bg-muted/30",
       )}
     >
-      <span className="text-xs font-medium leading-tight">{label}</span>
+      <span className="flex items-center gap-1 text-xs font-medium leading-tight">
+        {label}
+        {tooltip && <HelpTip text={tooltip} />}
+      </span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
   );
@@ -635,5 +721,24 @@ function Op({ children }: { children: React.ReactNode }) {
     <div className="flex h-9 items-end justify-center pb-2 text-base font-semibold text-muted-foreground">
       {children}
     </div>
+  );
+}
+
+function HelpTip({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+          aria-label="Ajuda"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+        {text}
+      </TooltipContent>
+    </Tooltip>
   );
 }
