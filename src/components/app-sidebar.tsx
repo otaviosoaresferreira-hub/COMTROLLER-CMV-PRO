@@ -28,6 +28,7 @@ import {
   Scissors,
   ShoppingCart,
   Phone,
+  ChartBar,
 } from "lucide-react";
 import { useBranding, DEFAULT_LOGO_URL } from "@/lib/branding";
 import { useAuth } from "@/lib/auth";
@@ -63,6 +64,7 @@ const operationalItems = [
   { title: "Produção", url: "/producao", icon: ChefHat },
   { title: "Processamento", url: "/processamento", icon: Scissors },
   { title: "Inventário", url: "/inventario", icon: ClipboardList },
+  { title: "Checklists", url: "/checklists", icon: ClipboardCheck },
   { title: "Histórico", url: "/historico", icon: History },
 ];
 
@@ -74,6 +76,7 @@ const managerItems = [
   { title: "Fichas Técnicas", url: "/fichas", icon: ChefHat },
   { title: "Auditorias de Turno", url: "/auditorias", icon: ClipboardCheck },
   { title: "Relatórios CMV", url: "/relatorios", icon: BarChart3 },
+  { title: "DRE", url: "/dre", icon: ChartBar },
   { title: "Equipe", url: "/equipe", icon: Users },
 ];
 
