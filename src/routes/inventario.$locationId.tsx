@@ -446,7 +446,7 @@ function InventarioLocation() {
       }
 
       if (divergences.length === 0) {
-        return { adjusted: 0, reconciled: reconciledItemIds.size, transferred: 0 };
+        return { adjusted: 0, reconciled: reconciledItemIds.size, transferred: 0, discrepanciesCreated: 0, auditsRequested: 0 };
       }
 
       // Pré-carrega saldos do Estoque Central para os itens com sobra (delta > 0).
@@ -588,7 +588,7 @@ function InventarioLocation() {
           const { data: discRow, error: eDisc } = await supabase
             .from("inventory_discrepancies")
             .insert({
-              count_id: countId,
+              count_id: null,
               item_id: d.item.id,
               central_location_id: locationId,
               kind,
@@ -628,7 +628,7 @@ function InventarioLocation() {
         auditsRequested,
       };
     },
-    onSuccess: ({ adjusted, reconciled, transferred }) => {
+    onSuccess: ({ adjusted, reconciled, transferred, auditsRequested }) => {
       const parts: string[] = [];
       parts.push(
         adjusted === 0 && transferred === 0
@@ -641,7 +641,11 @@ function InventarioLocation() {
       if (reconciled > 0) {
         parts.push(`${reconciled} embalagem(ns) reconciliada(s).`);
       }
+      if (auditsRequested > 0) {
+        parts.push(`${auditsRequested} auditoria(s) solicitada(s) às unidades.`);
+      }
       toast.success(parts.join(" "));
+      qc.invalidateQueries({ queryKey: ["inventory-discrepancies"] });
       qc.invalidateQueries({ queryKey: ["central"] });
       qc.invalidateQueries({ queryKey: ["historico"] });
       qc.invalidateQueries({ queryKey: ["inventario-system-stock"] });

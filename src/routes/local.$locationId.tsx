@@ -61,6 +61,7 @@ import {
   type LocationNode,
 } from "@/lib/location-hierarchy";
 import { ChevronRight } from "lucide-react";
+import { DiscrepancyAuditAlerts } from "@/components/discrepancy-audit-alerts";
 
 export const Route = createFileRoute("/local/$locationId")({
   component: LocalPage,
@@ -453,6 +454,7 @@ function LocalPage() {
       </header>
 
       <main className="mx-auto max-w-3xl space-y-4 px-4 pt-4">
+        <DiscrepancyAuditAlerts locationId={locationId} />
         {/* Valor total (modo gestor) */}
         {isManager && (
           <section className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">

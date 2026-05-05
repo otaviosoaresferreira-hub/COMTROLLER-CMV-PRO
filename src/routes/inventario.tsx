@@ -13,6 +13,7 @@ import {
   type LocationTreeNode,
 } from "@/lib/location-hierarchy";
 import { cn } from "@/lib/utils";
+import { DiscrepancyPanel } from "@/components/discrepancy-panel";
 
 export const Route = createFileRoute("/inventario")({
   head: () => ({
@@ -81,6 +82,10 @@ function InventarioHubContent() {
           </p>
         </div>
       </header>
+
+      <div className="mb-6">
+        <DiscrepancyPanel />
+      </div>
 
       {setupIncomplete && (
         <Card className="mb-6 border-primary/30 bg-primary/5">
