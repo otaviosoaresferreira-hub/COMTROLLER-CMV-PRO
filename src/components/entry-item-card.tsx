@@ -613,11 +613,13 @@ function SwitchTile({
   checked,
   onChange,
   tone = "neutral",
+  tooltip,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   tone?: "neutral" | "ok" | "warn";
+  tooltip?: string;
 }) {
   return (
     <label
@@ -628,7 +630,10 @@ function SwitchTile({
         tone === "neutral" && "border-border bg-muted/30",
       )}
     >
-      <span className="text-xs font-medium leading-tight">{label}</span>
+      <span className="flex items-center gap-1 text-xs font-medium leading-tight">
+        {label}
+        {tooltip && <HelpTip text={tooltip} />}
+      </span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
   );
