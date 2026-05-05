@@ -61,6 +61,7 @@ import {
   type LocationNode,
 } from "@/lib/location-hierarchy";
 import { ChevronRight } from "lucide-react";
+import { DiscrepancyAuditAlerts } from "@/components/discrepancy-audit-alerts";
 
 export const Route = createFileRoute("/local/$locationId")({
   component: LocalPage,
