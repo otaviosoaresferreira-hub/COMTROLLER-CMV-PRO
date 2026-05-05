@@ -187,6 +187,270 @@ export type Database = {
           },
         ]
       }
+      checklist_run_items: {
+        Row: {
+          created_at: string
+          done_at: string | null
+          done_by: string | null
+          id: string
+          is_done: boolean
+          note: string | null
+          org_id: string
+          photo_path: string | null
+          position: number
+          requires_photo: boolean
+          run_id: string
+          template_item_id: string | null
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          is_done?: boolean
+          note?: string | null
+          org_id?: string
+          photo_path?: string | null
+          position?: number
+          requires_photo?: boolean
+          run_id: string
+          template_item_id?: string | null
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          is_done?: boolean
+          note?: string | null
+          org_id?: string
+          photo_path?: string | null
+          position?: number
+          requires_photo?: boolean
+          run_id?: string
+          template_item_id?: string | null
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_run_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_run_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_runs: {
+        Row: {
+          assignee: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          notes: string | null
+          org_id: string
+          run_date: string
+          status: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignee?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          run_date?: string
+          status?: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          run_date?: string
+          status?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_runs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_template_items: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          position: number
+          requires_photo: boolean
+          template_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          position?: number
+          requires_photo?: boolean
+          template_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          position?: number
+          requires_photo?: boolean
+          template_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          recurrence: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id?: string
+          recurrence?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          recurrence?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expense_categories: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name: string
+          org_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          org_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          expense_date: string
+          id: string
+          kind: string
+          note: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          expense_date?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          expense_date?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hidden_system_categories: {
         Row: {
           category_id: string
@@ -1290,6 +1554,80 @@ export type Database = {
             columns: ["unit_location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_channels: {
+        Row: {
+          created_at: string
+          fee_percent: number
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fee_percent?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fee_percent?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      revenue_entries: {
+        Row: {
+          channel_id: string
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          gross_amount: number
+          id: string
+          note: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          gross_amount?: number
+          id?: string
+          note?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          gross_amount?: number
+          id?: string
+          note?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_entries_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_channels"
             referencedColumns: ["id"]
           },
         ]
