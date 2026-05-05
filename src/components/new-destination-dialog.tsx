@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,14 +23,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, AlertTriangle, Zap, Warehouse, Building2, MapPin } from "lucide-react";
-import {
-  LOCATION_TYPE_META,
-  allowedParentTypes,
-  type LocationType,
-} from "@/lib/location-hierarchy";
+import { LOCATION_TYPE_META, type LocationType } from "@/lib/location-hierarchy";
+import { findCentralLocation } from "@/lib/stock-constants";
 
 type OperationType = "self_service" | "a_la_carte";
 type StockMode = "traditional" | "direct";
+type SelectableType = "unit" | "operation";
 
 type LocationOption = {
   id: string;
@@ -39,11 +37,14 @@ type LocationOption = {
   parent_id: string | null;
 };
 
+const CENTRAL_VALUE = "__central__";
+
 export function NewDestinationDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [locationType, setLocationType] = useState<LocationType>("operation");
-  const [parentId, setParentId] = useState<string>(""); // "" = sem pai (apenas válido p/ CD)
+  const [locationType, setLocationType] = useState<SelectableType>("operation");
+  // Para Operação: id de uma Unidade, ou CENTRAL_VALUE p/ vincular ao Estoque Central.
+  const [parentSelection, setParentSelection] = useState<string>(CENTRAL_VALUE);
   const [operationType, setOperationType] = useState<OperationType>("a_la_carte");
   const [stockMode, setStockMode] = useState<StockMode>("traditional");
   const qc = useQueryClient();
@@ -61,34 +62,32 @@ export function NewDestinationDialog() {
     },
   });
 
-  // Pais possíveis para o tipo escolhido
-  const parentCandidates = useMemo(() => {
-    if (!locations) return [];
-    const allowed = allowedParentTypes(locationType);
-    if (allowed.length === 0) return [];
-    return locations.filter((l) => allowed.includes(l.location_type));
-  }, [locations, locationType]);
+  const central = useMemo(() => findCentralLocation(locations ?? []), [locations]);
+  const units = useMemo(
+    () => (locations ?? []).filter((l) => l.location_type === "unit"),
+    [locations],
+  );
 
   const reset = () => {
     setName("");
     setLocationType("operation");
-    setParentId("");
+    setParentSelection(CENTRAL_VALUE);
     setOperationType("a_la_carte");
     setStockMode("traditional");
   };
 
-  // Quando muda o tipo, valida o pai
-  const handleTypeChange = (t: LocationType) => {
+  const handleTypeChange = (t: SelectableType) => {
     setLocationType(t);
-    if (t === "cd") {
-      setParentId("");
-    } else if (parentId) {
-      const p = locations?.find((l) => l.id === parentId);
-      if (!p || !allowedParentTypes(t).includes(p.location_type)) {
-        setParentId("");
-      }
-    }
+    setParentSelection(CENTRAL_VALUE);
   };
+
+  // Garante que, se a unidade selecionada deixar de existir, voltamos ao Central.
+  useEffect(() => {
+    if (parentSelection === CENTRAL_VALUE) return;
+    if (!units.find((u) => u.id === parentSelection)) {
+      setParentSelection(CENTRAL_VALUE);
+    }
+  }, [units, parentSelection]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -97,13 +96,17 @@ export function NewDestinationDialog() {
       if (trimmed.toLowerCase().includes("central"))
         throw new Error("Esse nome é reservado para o Estoque Central");
 
-      if (locationType !== "cd" && !parentId) {
-        throw new Error(
-          locationType === "unit"
-            ? "Selecione o CD ao qual esta Unidade pertence"
-            : "Selecione o CD ou Unidade onde esta Operação fica",
-        );
-      }
+      if (!central?.id)
+        throw new Error("Estoque Central não encontrado. Recarregue a página.");
+
+      // Unidade → sempre vinculada ao Estoque Central.
+      // Operação → vinculada ao Estoque Central (default) ou a uma Unidade escolhida.
+      const parent_id =
+        locationType === "unit"
+          ? central.id
+          : parentSelection === CENTRAL_VALUE
+            ? central.id
+            : parentSelection;
 
       const { data: existing, error: checkErr } = await supabase
         .from("locations")
@@ -116,9 +119,7 @@ export function NewDestinationDialog() {
       const { error } = await supabase.from("locations").insert({
         name: trimmed,
         location_type: locationType,
-        parent_id: locationType === "cd" ? null : parentId,
-        // operation_type/stock_mode só fazem sentido para Operação,
-        // mas mantemos default seguro nos demais.
+        parent_id,
         operation_type: locationType === "operation" ? operationType : "a_la_carte",
         stock_mode: locationType === "operation" ? stockMode : "traditional",
       });
@@ -158,16 +159,16 @@ export function NewDestinationDialog() {
           <DialogHeader>
             <DialogTitle>Nova Localização</DialogTitle>
             <DialogDescription>
-              Defina o tipo, a hierarquia e como esta localização vai consumir o estoque.
+              O Estoque Central é a base do sistema. Crie Unidades e Operações vinculadas a ele.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
-            {/* TIPO DE LOCALIZAÇÃO */}
+            {/* TIPO DE LOCALIZAÇÃO (sem CD) */}
             <div className="space-y-2">
               <Label>Tipo de localização</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["cd", "unit", "operation"] as LocationType[]).map((t) => {
+              <div className="grid grid-cols-2 gap-2">
+                {(["unit", "operation"] as SelectableType[]).map((t) => {
                   const meta = LOCATION_TYPE_META[t];
                   const Icon = meta.icon;
                   const active = locationType === t;
@@ -189,12 +190,9 @@ export function NewDestinationDialog() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                {locationType === "cd" &&
-                  "Centro de Distribuição: recebe NFs e abastece Unidades/Operações."}
-                {locationType === "unit" &&
-                  "Unidade/Franquia: recebe transferências do CD e atende suas Operações."}
-                {locationType === "operation" &&
-                  "Operação/Setor: ponto final onde acontecem vendas, descartes e auditorias."}
+                {locationType === "unit"
+                  ? "Unidade/Franquia: vinculada automaticamente ao Estoque Central. Pode ter Operações filhas."
+                  : "Operação/Setor: ponto final de vendas, descartes e auditorias. Retira insumos do Central ou de uma Unidade."}
               </p>
             </div>
 
@@ -207,11 +205,9 @@ export function NewDestinationDialog() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={
-                  locationType === "cd"
-                    ? "Ex: CD São Paulo"
-                    : locationType === "unit"
-                      ? "Ex: Unidade Pinheiros"
-                      : "Ex: Cozinha Noite, Bar Principal"
+                  locationType === "unit"
+                    ? "Ex: Unidade Pinheiros"
+                    : "Ex: Cozinha Noite, Bar Principal"
                 }
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !mutation.isPending) mutation.mutate();
@@ -219,48 +215,47 @@ export function NewDestinationDialog() {
               />
             </div>
 
-            {/* PAI (somente para Unidade/Operação) */}
-            {locationType !== "cd" && (
+            {/* VÍNCULO — apenas para Operação */}
+            {isOperation && (
               <div className="space-y-2">
-                <Label htmlFor="dest-parent">
-                  {locationType === "unit" ? "CD pai" : "Localização pai (CD ou Unidade)"}
-                </Label>
-                {parentCandidates.length === 0 ? (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Nenhum {locationType === "unit" ? "CD" : "CD ou Unidade"} cadastrado.
-                      Crie primeiro um nível superior.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Select value={parentId} onValueChange={setParentId}>
-                    <SelectTrigger id="dest-parent">
-                      <SelectValue placeholder="Selecione o pai…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {parentCandidates.map((p) => {
-                        const Icon =
-                          p.location_type === "cd" ? Warehouse : Building2;
-                        return (
-                          <SelectItem key={p.id} value={p.id}>
-                            <span className="inline-flex items-center gap-1.5">
-                              <Icon className="h-3.5 w-3.5" />
-                              {p.name}
-                              <span className="text-[10px] uppercase text-muted-foreground">
-                                {LOCATION_TYPE_META[p.location_type].short}
-                              </span>
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                <Label htmlFor="dest-parent">Onde esta operação retira insumos?</Label>
+                <Select value={parentSelection} onValueChange={setParentSelection}>
+                  <SelectTrigger id="dest-parent">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={CENTRAL_VALUE}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Warehouse className="h-3.5 w-3.5" />
+                        Estoque Central
+                        <span className="text-[10px] uppercase text-muted-foreground">
+                          padrão
+                        </span>
+                      </span>
+                    </SelectItem>
+                    {units.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5" />
+                          {u.name}
+                          <span className="text-[10px] uppercase text-muted-foreground">
+                            unidade
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {units.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Nenhuma Unidade cadastrada — a operação será vinculada diretamente ao
+                    Estoque Central.
+                  </p>
                 )}
               </div>
             )}
 
-            {/* CONFIGURAÇÕES DE OPERAÇÃO (somente para tipo Operação) */}
+            {/* CONFIGURAÇÕES DE OPERAÇÃO */}
             {isOperation && (
               <>
                 <div className="space-y-2">
@@ -328,8 +323,8 @@ export function NewDestinationDialog() {
                   {stockMode === "traditional" && (
                     <p className="text-[11px] text-muted-foreground">
                       <span className="font-medium text-foreground">Modo Tradicional:</span>{" "}
-                      insumos precisam ser transferidos do Central para esta operação antes de
-                      serem consumidos. Auditoria completa por etapa.
+                      insumos precisam ser transferidos do Central (ou Unidade) para esta
+                      operação antes de serem consumidos. Auditoria completa por etapa.
                     </p>
                   )}
                 </div>
@@ -340,9 +335,8 @@ export function NewDestinationDialog() {
               <Alert className="border-sky-500/30 bg-sky-500/5">
                 <MapPin className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  {locationType === "cd"
-                    ? "Centros de Distribuição recebem entradas de NF e abastecem Unidades/Operações via transferência."
-                    : "Unidades recebem transferências do CD e abastecem Operações filhas. Você poderá adicionar Operações dentro desta Unidade depois de criá-la."}
+                  Unidades são vinculadas ao Estoque Central automaticamente. Depois de criada,
+                  você pode adicionar Operações filhas dentro desta Unidade.
                 </AlertDescription>
               </Alert>
             )}
@@ -351,7 +345,7 @@ export function NewDestinationDialog() {
           <DialogFooter>
             <Button
               onClick={() => mutation.mutate()}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || !central?.id}
               className="w-full"
             >
               {mutation.isPending ? "Criando…" : "Criar localização"}
