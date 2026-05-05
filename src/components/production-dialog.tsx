@@ -142,6 +142,7 @@ export function ProductionDialog({
   triggerVariant = "default",
   triggerClassName,
   editMovementId,
+  presetRecipeId,
 }: Props) {
   const [openInternal, setOpenInternal] = useState(false);
   const open = openProp ?? openInternal;
