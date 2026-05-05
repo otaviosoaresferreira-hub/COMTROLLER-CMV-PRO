@@ -225,39 +225,13 @@ export function applyBidirectional(
 ): Partial<EntryCardData> {
   const patch: Partial<EntryCardData> = {};
   if (field === "units") patch.sharedUnits = rawValue;
-  if (field === "lot") patch.newStandardWeightKg = rawValue;
+  if (field === "lot") patch.lotWeightKg = rawValue;
   if (field === "total") patch.sharedTotalKg = rawValue;
-
-  // Atualiza histórico de campos editados (usado como desempate quando os 3 têm valor).
-  const prev = data.sharedLastEdited;
-  const newPrev = prev && prev !== field ? prev : data.sharedPrevEdited;
-  patch.sharedLastEdited = field;
-  patch.sharedPrevEdited = newPrev;
 
   // Valores efetivos pós-edição
   const valUnits = field === "units" ? parseDec(rawValue) : parseDec(data.sharedUnits);
-  const valLot = field === "lot" ? parseDec(rawValue) : parseDec(data.newStandardWeightKg);
+  const valLot = field === "lot" ? parseDec(rawValue) : parseDec(data.lotWeightKg);
   const valTotal = field === "total" ? parseDec(rawValue) : parseDec(data.sharedTotalKg);
-
-  const has = {
-    units: valUnits > 0,
-    lot: valLot > 0,
-    total: valTotal > 0,
-  };
-  const filledCount = (has.units ? 1 : 0) + (has.lot ? 1 : 0) + (has.total ? 1 : 0);
-
-  // Decide qual campo é o "alvo" do cálculo:
-  // - Se exatamente 2 campos preenchidos → o vazio é o alvo.
-  // - Se 3 preenchidos → alvo é aquele que NÃO é o atual nem o penúltimo editado
-  //   (ou seja, o mais "antigo"), preservando a intenção do usuário.
-  let target: "units" | "lot" | "total" | null = null;
-  if (filledCount === 2) {
-    target = (["units", "lot", "total"] as const).find((k) => !has[k]) ?? null;
-  } else if (filledCount === 3) {
-    const anchors = new Set<string>([field]);
-    if (newPrev) anchors.add(newPrev);
-    target = (["units", "lot", "total"] as const).find((k) => !anchors.has(k)) ?? null;
-  }
 
   // Precisão total no estado — máscara ocorre só na exibição.
   const toState = (n: number) => {
@@ -265,13 +239,23 @@ export function applyBidirectional(
     return n.toLocaleString("en-US", { maximumFractionDigits: 12, useGrouping: false });
   };
 
-  if (target === "total" && has.units && has.lot) {
-    patch.sharedTotalKg = toState(valUnits * valLot);
-  } else if (target === "lot" && has.units && has.total) {
-    patch.newStandardWeightKg = toState(valTotal / valUnits);
-  } else if (target === "units" && has.lot && has.total) {
-    // Unidades são inteiras → arredonda para o inteiro mais próximo.
-    patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+  // Prioridade fixa por campo editado (sem rastrear histórico):
+  // - units alterado  → recalcula total (se tiver lot)
+  // - lot alterado    → recalcula total (se tiver units)
+  // - total alterado  → recalcula lot   (se tiver units)
+  // Caso o "alvo" não tenha entradas suficientes, tenta recalcular outro campo
+  // que esteja vazio para nunca deixar zerado quando há 2 valores.
+  if (field === "units") {
+    if (valUnits > 0 && valLot > 0) patch.sharedTotalKg = toState(valUnits * valLot);
+    else if (valUnits > 0 && valTotal > 0) patch.lotWeightKg = toState(valTotal / valUnits);
+  } else if (field === "lot") {
+    if (valUnits > 0 && valLot > 0) patch.sharedTotalKg = toState(valUnits * valLot);
+    else if (valLot > 0 && valTotal > 0)
+      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
+  } else if (field === "total") {
+    if (valUnits > 0 && valTotal > 0) patch.lotWeightKg = toState(valTotal / valUnits);
+    else if (valLot > 0 && valTotal > 0)
+      patch.sharedUnits = String(Math.max(0, Math.round(valTotal / valLot)));
   }
 
   return patch;
