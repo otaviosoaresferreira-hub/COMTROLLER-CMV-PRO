@@ -628,7 +628,7 @@ function InventarioLocation() {
         auditsRequested,
       };
     },
-    onSuccess: ({ adjusted, reconciled, transferred }) => {
+    onSuccess: ({ adjusted, reconciled, transferred, auditsRequested }) => {
       const parts: string[] = [];
       parts.push(
         adjusted === 0 && transferred === 0
@@ -641,7 +641,11 @@ function InventarioLocation() {
       if (reconciled > 0) {
         parts.push(`${reconciled} embalagem(ns) reconciliada(s).`);
       }
+      if (auditsRequested > 0) {
+        parts.push(`${auditsRequested} auditoria(s) solicitada(s) às unidades.`);
+      }
       toast.success(parts.join(" "));
+      qc.invalidateQueries({ queryKey: ["inventory-discrepancies"] });
       qc.invalidateQueries({ queryKey: ["central"] });
       qc.invalidateQueries({ queryKey: ["historico"] });
       qc.invalidateQueries({ queryKey: ["inventario-system-stock"] });
