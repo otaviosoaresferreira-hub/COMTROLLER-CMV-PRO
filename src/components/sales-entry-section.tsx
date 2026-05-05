@@ -528,6 +528,15 @@ export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDi
               {fmtBRL(totalRevenue)}
             </Badge>
           )}
+          {globalDiscount !== 0 && (
+            <Badge
+              variant="outline"
+              className="tabular-nums border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+              title="Despesas/descontos/frete capturados da linha --- do CSV"
+            >
+              Descontos {fmtBRL(globalDiscount)}
+            </Badge>
+          )}
           {unmapped.length > 0 && (
             <Badge
               variant="outline"
