@@ -134,8 +134,7 @@ export function makeBlankEntryCard(): EntryCardData {
     totalValue: "",
     sharedUnits: "",
     sharedTotalKg: "",
-    sharedLastEdited: undefined,
-    sharedPrevEdited: undefined,
+    lotWeightKg: "",
     expiryDate: "",
     lotNumber: "",
   };
