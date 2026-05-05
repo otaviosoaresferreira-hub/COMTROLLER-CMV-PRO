@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
-import {
-  useBranding,
-  BG_OPTIONS,
-  BTN_OPTIONS,
-  type BgTheme,
-  type BtnTheme,
-} from "@/lib/branding";
+import { useBranding, DEFAULT_PRIMARY, DEFAULT_BACKGROUND } from "@/lib/branding";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
