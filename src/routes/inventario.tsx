@@ -83,6 +83,10 @@ function InventarioHubContent() {
         </div>
       </header>
 
+      <div className="mb-6">
+        <DiscrepancyPanel />
+      </div>
+
       {setupIncomplete && (
         <Card className="mb-6 border-primary/30 bg-primary/5">
           <CardHeader>
