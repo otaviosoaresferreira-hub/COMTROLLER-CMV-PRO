@@ -163,8 +163,8 @@ function parseCsv(text: string): string[][] {
   return out;
 }
 
-// Detecta colunas: produto/descrição e quantidade.
-function detectColumns(header: string[]): { name: number; qty: number } {
+// Detecta colunas: código, produto/descrição, quantidade e valor (faturamento).
+function detectColumns(header: string[]): { code: number; name: number; qty: number; revenue: number } {
   const norm = header.map((h) =>
     h
       .toLowerCase()
@@ -172,17 +172,27 @@ function detectColumns(header: string[]): { name: number; qty: number } {
       .replace(/[\u0300-\u036f]/g, "")
       .trim(),
   );
+  const codeKeys = ["cod", "codigo", "code", "sku"];
   const nameKeys = ["produto", "nome", "descricao", "item", "mercadoria"];
   const qtyKeys = ["quantidade", "qtd", "qtde", "qty", "vendido", "vendidos", "qt"];
+  // Coluna "Valor" (faturamento total da linha) — preferimos sobre "Valor un".
+  const revenueKeys = ["valor total", "faturamento", "total"];
+  let codeIdx = norm.findIndex((h) => codeKeys.some((k) => h === k));
   let nameIdx = norm.findIndex((h) => nameKeys.some((k) => h === k || h.includes(k)));
   let qtyIdx = norm.findIndex((h) => qtyKeys.some((k) => h === k || h.includes(k)));
+  let revIdx = norm.findIndex((h) => revenueKeys.some((k) => h === k));
+  if (revIdx < 0) {
+    // ConnectPlug: cabeçalho exato "valor" (depois de "valor un"). Pega o
+    // último "valor" encontrado quando há múltiplos.
+    const all = norm.map((h, i) => (h === "valor" ? i : -1)).filter((i) => i >= 0);
+    revIdx = all.length > 0 ? all[all.length - 1] : -1;
+  }
   if (nameIdx < 0) nameIdx = 0;
   if (qtyIdx < 0) {
-    // Heurística: pega a primeira coluna numérica que NÃO seja a de nome
     qtyIdx = norm.findIndex((_, i) => i !== nameIdx);
     if (qtyIdx < 0) qtyIdx = 1;
   }
-  return { name: nameIdx, qty: qtyIdx };
+  return { code: codeIdx, name: nameIdx, qty: qtyIdx, revenue: revIdx };
 }
 
 function parseQty(raw: string): number {
