@@ -494,28 +494,51 @@ export function EntryItemCard({
                   value={data.newWeightVariable ? "var" : "fix"}
                   onValueChange={(v) => {
                     if (!v) return;
-                    onChange({ newWeightVariable: v === "var" });
+                    const isVar = v === "var";
+                    const patch: Partial<EntryCardData> = { newWeightVariable: isVar };
+                    // Peso Fixo: trava o peso do lote = Peso Base
+                    if (!isVar && data.newStandardWeightKg) {
+                      patch.lotWeightKg = data.newStandardWeightKg;
+                      // recalcula total se houver unidades
+                      const u = parseDec(data.sharedUnits);
+                      const lk = parseDec(data.newStandardWeightKg);
+                      if (u > 0 && lk > 0) {
+                        patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
+                          maximumFractionDigits: 12,
+                          useGrouping: false,
+                        });
+                      }
+                    }
+                    onChange(patch);
                   }}
                   className="justify-start"
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ToggleGroupItem value="fix" size="sm" className="h-9 px-3 text-xs">
+                      <ToggleGroupItem
+                        value="fix"
+                        size="sm"
+                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                      >
                         Peso Fixo
                       </ToggleGroupItem>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                      Use para itens com peso padronizado (ex: Latas, Garrafas). O sistema avisará se houver divergência.
+                      Trava o Peso do Lote no Peso Base. Qtd × Peso Base = Total automaticamente.
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ToggleGroupItem value="var" size="sm" className="h-9 px-3 text-xs">
+                      <ToggleGroupItem
+                        value="var"
+                        size="sm"
+                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                      >
                         Peso Variável
                       </ToggleGroupItem>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                      Use para itens pesados na entrega (ex: Carnes, Hortis). O sistema calculará o custo médio real do lote.
+                      Libera o Peso do Lote para edição. O custo médio reflete o peso real recebido sem alterar o Peso Base.
                     </TooltipContent>
                   </Tooltip>
                 </ToggleGroup>
@@ -529,7 +552,23 @@ export function EntryItemCard({
                   min="0"
                   placeholder="0,000"
                   value={data.newStandardWeightKg}
-                  onChange={(e) => onChange({ newStandardWeightKg: e.target.value })}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const patch: Partial<EntryCardData> = { newStandardWeightKg: v };
+                    // Em Peso Fixo, o lote acompanha o Peso Base.
+                    if (!data.newWeightVariable) {
+                      patch.lotWeightKg = v;
+                      const u = parseDec(data.sharedUnits);
+                      const lk = parseDec(v);
+                      if (u > 0 && lk > 0) {
+                        patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
+                          maximumFractionDigits: 12,
+                          useGrouping: false,
+                        });
+                      }
+                    }
+                    onChange(patch);
+                  }}
                 />
               </div>
             </div>
