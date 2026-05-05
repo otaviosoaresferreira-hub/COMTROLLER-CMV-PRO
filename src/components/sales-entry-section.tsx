@@ -331,45 +331,78 @@ export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDi
         toast.error("CSV vazio ou sem dados além do cabeçalho.");
         return;
       }
-      const { name: nameIdx, qty: qtyIdx } = detectColumns(rows[0]);
-      const accum = new Map<string, number>(); // source_name (lowercased) -> qty total
-      const display = new Map<string, string>(); // lowercased -> nome original
+      const cols = detectColumns(rows[0]);
+      // Acumula por chave: código (preferido) ou nome curto.
+      type Acc = { code: string; display: string; qty: number; revenue: number };
+      const accum = new Map<string, Acc>();
+      let discountTotal = 0;
+
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        const rawName = (row[nameIdx] ?? "").trim();
-        const rawQty = (row[qtyIdx] ?? "").trim();
-        if (!rawName) continue;
+        const rawCode = cols.code >= 0 ? (row[cols.code] ?? "").trim() : "";
+        const rawName = (row[cols.name] ?? "").trim();
+        const rawQty = (row[cols.qty] ?? "").trim();
+        const rawRev = cols.revenue >= 0 ? (row[cols.revenue] ?? "").trim() : "";
+        if (!rawName && !rawCode) continue;
+
+        // Linha de despesas/descontos/frete: código "---". Captura "Valor"
+        // (que pode ser negativo, ex.: "R$ -41,19") como desconto global.
+        if (rawCode === "---" || rawCode === "—" || /despesas|descontos|frete/i.test(rawName)) {
+          discountTotal += parseMoneyBR(rawRev || rawQty);
+          continue;
+        }
+
         const q = parseQty(rawQty);
-        if (q <= 0) continue;
-        const key = rawName.toLowerCase();
-        accum.set(key, (accum.get(key) ?? 0) + q);
-        if (!display.has(key)) display.set(key, rawName);
+        const rev = parseMoneyBR(rawRev);
+        if (q <= 0 && rev === 0) continue;
+
+        // Chave: código quando existir; senão, nome curto normalizado.
+        const display = shortName(rawName) || rawName || rawCode;
+        const key = rawCode
+          ? `c:${rawCode.toLowerCase()}`
+          : `n:${display.toLowerCase()}`;
+        const cur = accum.get(key) ?? { code: rawCode, display, qty: 0, revenue: 0 };
+        cur.qty += q;
+        cur.revenue += rev;
+        // Garante o nome curto (ignora variações de pedido).
+        if (!cur.display) cur.display = display;
+        accum.set(key, cur);
       }
-      if (accum.size === 0) {
+
+      if (accum.size === 0 && discountTotal === 0) {
         toast.error("Não consegui identificar produtos e quantidades.");
         return;
       }
 
-      // Aplica vínculos existentes; coleta os não mapeados.
+      // Aplica vínculos existentes (preferindo código), coleta os não mapeados.
       const newSales = new Map(sales);
       const pending: Unmapped[] = [];
-      accum.forEach((qty, key) => {
-        const map = mappingByName.get(key);
+      accum.forEach((acc) => {
+        const codeKey = acc.code ? acc.code.toLowerCase() : "";
+        const map =
+          (codeKey && mappingByCode.get(codeKey)) ||
+          mappingByName.get(acc.display.toLowerCase());
         if (map) {
           const recId = map.recipe_id;
           const mult = Number(map.multiplier || 1);
-          newSales.set(recId, (newSales.get(recId) ?? 0) + qty * mult);
+          newSales.set(recId, (newSales.get(recId) ?? 0) + acc.qty * mult);
         } else {
-          pending.push({ source_name: display.get(key) ?? key, qty });
+          pending.push({
+            source_code: acc.code,
+            display_name: acc.display,
+            qty: acc.qty,
+            revenue: acc.revenue,
+          });
         }
       });
       onSalesChange(newSales);
+      setGlobalDiscount(discountTotal);
+      onGlobalDiscountChange?.(discountTotal);
       const importedCount = accum.size - pending.length;
       toast.success(
         `${importedCount} ${importedCount === 1 ? "produto importado" : "produtos importados"}` +
-          (pending.length > 0
-            ? ` · ${pending.length} aguardam vínculo`
-            : ""),
+          (pending.length > 0 ? ` · ${pending.length} aguardam vínculo` : "") +
+          (discountTotal !== 0 ? ` · descontos ${fmtBRL(discountTotal)}` : ""),
       );
       if (pending.length > 0) {
         setUnmapped(pending);
@@ -385,14 +418,35 @@ export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDi
   // ============= MAPPING MUTATION =============
 
   const saveMapping = useMutation({
-    mutationFn: async ({ source_name, recipe_id }: { source_name: string; recipe_id: string }) => {
-      const { error } = await supabase
-        .from("sales_item_mappings")
-        .upsert(
-          { source_name, recipe_id, multiplier: 1 },
-          { onConflict: "org_id,source_name" },
-        );
-      if (error) throw error;
+    mutationFn: async ({
+      source_name,
+      external_code,
+      recipe_id,
+    }: {
+      source_name: string;
+      external_code: string | null;
+      recipe_id: string;
+    }) => {
+      // Se temos código, fazemos upsert por (org_id, external_code) usando o
+      // índice único parcial criado na migration. Caso contrário, caímos no
+      // upsert legado por (org_id, source_name).
+      if (external_code) {
+        const { error } = await supabase
+          .from("sales_item_mappings")
+          .upsert(
+            { source_name, external_code, recipe_id, multiplier: 1 },
+            { onConflict: "org_id,external_code" },
+          );
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("sales_item_mappings")
+          .upsert(
+            { source_name, recipe_id, multiplier: 1 },
+            { onConflict: "org_id,source_name" },
+          );
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sales-entry-data"] });
@@ -400,12 +454,22 @@ export function SalesEntrySection({ sales, onSalesChange, locationId, onGlobalDi
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const linkUnmapped = (sourceName: string, qty: number, recipeId: string) => {
-    saveMapping.mutate({ source_name: sourceName, recipe_id: recipeId });
+  const linkUnmapped = (u: Unmapped, recipeId: string) => {
+    saveMapping.mutate({
+      source_name: u.display_name,
+      external_code: u.source_code || null,
+      recipe_id: recipeId,
+    });
     const newSales = new Map(sales);
-    newSales.set(recipeId, (newSales.get(recipeId) ?? 0) + qty);
+    newSales.set(recipeId, (newSales.get(recipeId) ?? 0) + u.qty);
     onSalesChange(newSales);
-    setUnmapped((prev) => prev.filter((u) => u.source_name !== sourceName));
+    setUnmapped((prev) =>
+      prev.filter((x) =>
+        u.source_code
+          ? x.source_code !== u.source_code
+          : x.display_name !== u.display_name,
+      ),
+    );
   };
 
   // ============= MANUAL ENTRY =============
