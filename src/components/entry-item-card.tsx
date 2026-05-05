@@ -702,3 +702,22 @@ function Op({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+function HelpTip({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+          aria-label="Ajuda"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
