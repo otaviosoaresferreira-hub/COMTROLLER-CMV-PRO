@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrgId } from "@/lib/use-org-id";
@@ -308,13 +308,15 @@ function RunItemRow({
   const [uploading, setUploading] = useState(false);
 
   // Resolve signed URL when photo exists
-  useState(() => {
-    if (item.photo_path && !photoUrl) {
+  useEffect(() => {
+    if (item.photo_path) {
       supabase.storage.from("checklist-photos")
         .createSignedUrl(item.photo_path, 3600)
         .then(({ data }) => setPhotoUrl(data?.signedUrl ?? null));
+    } else {
+      setPhotoUrl(null);
     }
-  });
+  }, [item.photo_path]);
 
   const toggleDone = async (v: boolean) => {
     if (v && item.requires_photo && !item.photo_path) {
