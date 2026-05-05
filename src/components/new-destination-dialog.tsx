@@ -25,9 +25,9 @@ import { toast } from "sonner";
 import { Plus, AlertTriangle, Zap, Warehouse, Building2, MapPin } from "lucide-react";
 import {
   LOCATION_TYPE_META,
-  allowedParentTypes,
   type LocationType,
 } from "@/lib/location-hierarchy";
+import { findCentralLocation } from "@/lib/stock-constants";
 
 type OperationType = "self_service" | "a_la_carte";
 type StockMode = "traditional" | "direct";
