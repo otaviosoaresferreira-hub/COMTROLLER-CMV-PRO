@@ -77,7 +77,7 @@ type ItemRow = {
   standard_weight_g?: number;
   avg_weight_g?: number;
 };
-type LocationRow = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null };
+type LocationRow = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null; parent_id?: string | null; location_type?: string | null };
 type StockRow = { item_id: string; location_id: string; current_stock: number };
 type RecipeRow = {
   id: string;
@@ -169,6 +169,7 @@ export function ProductionDialog({
   const [proportionFactor, setProportionFactor] = useState(1); // multiplicador aplicado pelo "Recalcular proporcional"
   const [batchExpiry, setBatchExpiry] = useState(""); // validade opcional do lote produzido (YYYY-MM-DD)
   const [locationId, setLocationId] = useState("");
+  const [consumeFromShared, setConsumeFromShared] = useState(false);
 
   // ============ Modo "Criar Receita na Hora" (on-the-fly) ============
   // Quando ativo, ignora o seletor de receita e usa estes campos para montar
@@ -198,7 +199,7 @@ export function ProductionDialog({
             "id,name,unit,cost_price,category_id,shared_unit_enabled,standard_weight_g,avg_weight_g",
           )
           .eq("is_active", true),
-        supabase.from("locations").select("id,name,stock_mode,is_shared").order("name"),
+        supabase.from("locations").select("id,name,stock_mode,is_shared,parent_id,location_type").order("name"),
         supabase.from("stock_levels").select("item_id,location_id,current_stock"),
         supabase.from("categories").select("id,name"),
         supabase
@@ -279,6 +280,29 @@ export function ProductionDialog({
     () => data?.locations.find((l) => l.name.toLowerCase().includes("central")),
     [data],
   );
+
+  /** Uso Comum da unidade onde a produção está acontecendo.
+   *  Regra: a unidade vem do destino selecionado. Se o destino for uma operação,
+   *  a unidade é seu parent. Se o destino for a própria unidade, ela mesma. */
+  const sharedLocationForDest = useMemo(() => {
+    if (!data || !locationId) return null;
+    const dest = data.locations.find((l) => l.id === locationId);
+    if (!dest) return null;
+    let unitId: string | null = null;
+    if (dest.location_type === "unit") unitId = dest.id;
+    else if (dest.location_type === "operation") unitId = dest.parent_id ?? null;
+    if (!unitId) return null;
+    return (
+      data.locations.find(
+        (l) => l.parent_id === unitId && l.is_shared === true,
+      ) ?? null
+    );
+  }, [data, locationId]);
+
+  // Quando o destino mudar e não houver Uso Comum disponível, desliga a chave.
+  useEffect(() => {
+    if (!sharedLocationForDest && consumeFromShared) setConsumeFromShared(false);
+  }, [sharedLocationForDest, consumeFromShared]);
 
   const realRecipe = data?.recipes.find((r) => r.id === recipeId) ?? null;
 
@@ -1236,6 +1260,13 @@ export function ProductionDialog({
         stockByItem: stockByItemForExplode,
       };
 
+      const consumeLocId = consumeFromShared && sharedLocationForDest
+        ? sharedLocationForDest.id
+        : central.id;
+      const consumeLocLabel = consumeFromShared && sharedLocationForDest
+        ? ` [Uso Comum @ ${sharedLocationForDest.name}]`
+        : "";
+
       const debitOne = async (
         itemId: string,
         baseQty: number,
@@ -1254,24 +1285,24 @@ export function ProductionDialog({
           });
           if (r.realBaseTaken > 0) realTaken = r.realBaseTaken;
         } catch (_e) { /* não bloqueia produção */ }
-        const k = stockKey(itemId, central.id);
+        const k = stockKey(itemId, consumeLocId);
         const cur = stockMap.get(k) ?? 0;
         const newQty = cur - realTaken;
         stockMap.set(k, newQty);
         const { error } = await supabase
           .from("stock_levels")
           .upsert(
-            { item_id: itemId, location_id: central.id, current_stock: newQty },
+            { item_id: itemId, location_id: consumeLocId, current_stock: newQty },
             { onConflict: "item_id,location_id" },
           );
         if (error) throw error;
         const { error: mErr } = await supabase.from("movements").insert({
           item_id: itemId,
-          from_location_id: central.id,
+          from_location_id: consumeLocId,
           to_location_id: null,
           quantity: realTaken,
           type: "production_out",
-          note: `Produção: ${effectiveRecipeName}${noteSuffix}${isEditMode ? " [EDITADO]" : ""}`,
+          note: `Produção: ${effectiveRecipeName}${noteSuffix}${consumeLocLabel}${isEditMode ? " [EDITADO]" : ""}`,
         });
         if (mErr) throw mErr;
       };
@@ -2226,6 +2257,24 @@ export function ProductionDialog({
                   </p>
                 );
               })()}
+              {sharedLocationForDest && (
+                <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={consumeFromShared}
+                    onChange={(e) => setConsumeFromShared(e.target.checked)}
+                  />
+                  <span>
+                    <span className="font-semibold text-amber-700 dark:text-amber-300">
+                      Consumir do Uso Comum
+                    </span>
+                    <span className="ml-1 text-muted-foreground">
+                      — insumos sairão de "{sharedLocationForDest.name}" em vez do Estoque Central.
+                    </span>
+                  </span>
+                </label>
+              )}
             </section>
           )}
         </div>
