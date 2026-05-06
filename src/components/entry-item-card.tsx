@@ -548,7 +548,7 @@ export function EntryItemCard({
                     onCheckedChange={(v) => onChange({ conversionEnabled: v })}
                   />
                   <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                    Fator
+                    Fator de Conversão
                     <HelpTip text="Ative para vincular KG ↔ L. O fator atua nos bastidores nas fichas técnicas e inventário; o custo final usa sempre a unidade base escolhida." />
                   </span>
                 </div>
@@ -680,7 +680,10 @@ export function EntryItemCard({
                 const b = parseDec(boxes);
                 const f = parseDec(factor);
                 if (b > 0 && f > 0) {
-                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                  Object.assign(
+                    next,
+                    applyBidirectional(data, "units", String(Math.max(0, Math.round(b / f)))),
+                  );
                 }
                 onChange(next);
               }}
@@ -690,7 +693,10 @@ export function EntryItemCard({
                 const b = parseDec(boxes);
                 const f = parseDec(factor);
                 if (b > 0 && f > 0) {
-                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                  Object.assign(
+                    next,
+                    applyBidirectional(data, "units", String(Math.max(0, Math.round(b / f)))),
+                  );
                 }
                 onChange(next);
               }}
@@ -700,7 +706,8 @@ export function EntryItemCard({
                 const f = parseDec(data.packFactor ?? "");
                 const u = parseDec(cleaned);
                 if (f > 0 && u > 0) {
-                  patch.packBoxes = (u / f).toLocaleString("en-US", {
+                  // Units × Fator = Volume (inverso de Volume / Fator = Units)
+                  patch.packBoxes = (u * f).toLocaleString("en-US", {
                     maximumFractionDigits: 3,
                     useGrouping: false,
                   });
@@ -1042,7 +1049,7 @@ function WholesaleQty({
 }) {
   const b = parseDec(boxes);
   const f = parseDec(factor);
-  const computed = b > 0 && f > 0 ? Math.round(b * f) : 0;
+  const computed = b > 0 && f > 0 ? Math.max(0, Math.round(b / f)) : 0;
   const u = parseDec(units);
   return (
     <div className="rounded-md border border-dashed border-border bg-background/40 p-2">
@@ -1052,7 +1059,7 @@ function WholesaleQty({
         </Label>
         <label className="flex cursor-pointer items-center gap-1.5">
           <span className="text-[10px] font-medium text-muted-foreground">
-            Volume de Compra (Caixa/Fardo)
+            Calcular por Volume
           </span>
           <Switch checked={wholesale} onCheckedChange={onToggle} />
         </label>
@@ -1062,25 +1069,25 @@ function WholesaleQty({
           <Input
             type="number"
             inputMode="decimal"
-            step="1"
+            step="0.001"
             min="0"
             placeholder="Volume"
             value={boxes}
             onChange={(e) => onChangeBoxes(e.target.value)}
-            className="h-9 w-20 tabular-nums text-center"
-            title="Volume de Compra (caixas/fardos)"
+            className="h-9 w-24 tabular-nums text-center"
+            title="Volume total da compra"
           />
-          <span className="text-base font-semibold text-muted-foreground">×</span>
+          <span className="text-base font-semibold text-muted-foreground">÷</span>
           <Input
             type="number"
-            inputMode="numeric"
-            step="1"
+            inputMode="decimal"
+            step="0.001"
             min="0"
-            placeholder="Fator"
+            placeholder="Fator de Conversão"
             value={factor}
             onChange={(e) => onChangeFactor(e.target.value)}
-            className="h-9 w-20 tabular-nums text-center"
-            title="Fator (unidades por embalagem)"
+            className="h-9 w-32 tabular-nums text-center"
+            title="Fator de Conversão (volume por unidade)"
           />
           <span className="text-base font-semibold text-muted-foreground">=</span>
           <div className="flex h-9 min-w-[80px] flex-1 items-center justify-end rounded-md border border-primary/40 bg-primary/10 px-3 text-sm font-bold tabular-nums text-primary">
