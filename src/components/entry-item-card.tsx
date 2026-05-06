@@ -539,7 +539,7 @@ export function EntryItemCard({
                       <ToggleGroupItem
                         value="fix"
                         size="sm"
-                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                        className="h-9 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
                       >
                         Peso Fixo
                       </ToggleGroupItem>
