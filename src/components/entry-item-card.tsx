@@ -1083,7 +1083,7 @@ function WholesaleQty({
             inputMode="decimal"
             step="0.001"
             min="0"
-            placeholder="Fator de Conversão"
+            placeholder="Fator "
             value={factor}
             onChange={(e) => onChangeFactor(e.target.value)}
             className="h-9 w-32 tabular-nums text-center"
