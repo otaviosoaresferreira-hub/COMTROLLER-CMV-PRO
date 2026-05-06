@@ -1,7 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import defaultLogo from "@/assets/logo-controller-cmv-pro.png";
-
-export const DEFAULT_LOGO_URL = defaultLogo;
+export const DEFAULT_LOGO_URL = "/logo-controller-cmv-pro.png";
 
 export type ThemeMode = "light" | "medium" | "dark";
 
