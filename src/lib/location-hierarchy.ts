@@ -4,7 +4,7 @@
 // parent_id (auto-FK). Esta camada centraliza nomenclatura e regras
 // de aninhamento usadas pela UI para evitar divergência entre telas.
 
-import { Warehouse, Building2, MapPin, type LucideIcon } from "lucide-react";
+import { Warehouse, Building2, MapPin, Soup, type LucideIcon } from "lucide-react";
 
 export type LocationType = "cd" | "unit" | "operation";
 
@@ -13,6 +13,7 @@ export type LocationNode = {
   name: string;
   parent_id: string | null;
   location_type: LocationType;
+  is_shared?: boolean | null;
   // Demais campos passam adiante intactos.
   // Tipado como Record<string, unknown> para não acoplar à shape exata.
   [key: string]: unknown;
