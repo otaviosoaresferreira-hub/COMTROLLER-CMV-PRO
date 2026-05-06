@@ -183,8 +183,8 @@ export function AppSidebar() {
             <img
               src={logoSrc}
               alt="Controller CMV Pro"
-              className="block"
-              style={{ width: "100%", height: "auto" }}
+              className="block mx-auto"
+              style={{ width: "160px", height: "auto", maxWidth: "none", padding: 0, margin: "0 auto" }}
             />
             <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground pb-2">
               {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
