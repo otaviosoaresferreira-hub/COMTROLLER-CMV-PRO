@@ -330,6 +330,62 @@ export function EntryItemCard({
   }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
+
+  // Calculadora bidirecional: rastreia os dois últimos campos tocados pelo usuário.
+  // O terceiro (não tocado mais recentemente) é o "computado" automaticamente.
+  type CalcField = "units" | "lot" | "total";
+  const [calcTouched, setCalcTouched] = useState<[CalcField, CalcField]>(["units", "lot"]);
+  const computedField: CalcField = (["units", "lot", "total"] as CalcField[]).find(
+    (f) => f !== calcTouched[0] && f !== calcTouched[1],
+  )!;
+
+  const touchCalcField = (f: CalcField) => {
+    setCalcTouched((prev) => {
+      if (prev[0] === f) return prev;
+      if (prev[1] === f) return [f, prev[0]];
+      return [f, prev[0]];
+    });
+  };
+
+  /** Recalcula o campo "computado" com base nos dois tocados, usando A × B = C. */
+  const recomputeCalc = (
+    patch: Partial<EntryCardData>,
+    overrideTouched?: [CalcField, CalcField],
+  ): Partial<EntryCardData> => {
+    const touched = overrideTouched ?? calcTouched;
+    const computed = (["units", "lot", "total"] as CalcField[]).find(
+      (f) => f !== touched[0] && f !== touched[1],
+    )!;
+    const merged = { ...data, ...patch };
+    const u = parseDec(merged.sharedUnits);
+    const l = parseDec(merged.lotWeightKg);
+    const tot = parseDec(merged.sharedTotalKg);
+    const toState = (n: number) =>
+      Number.isFinite(n) && n > 0
+        ? n.toLocaleString("en-US", { maximumFractionDigits: 12, useGrouping: false })
+        : "";
+    if (computed === "total" && u > 0 && l > 0) patch.sharedTotalKg = toState(u * l);
+    else if (computed === "lot" && u > 0 && tot > 0) patch.lotWeightKg = toState(tot / u);
+    else if (computed === "units" && l > 0 && tot > 0)
+      patch.sharedUnits = String(Math.max(0, Math.round(tot / l)));
+    return patch;
+  };
+
+  const handleCalcChange = (field: CalcField, rawValue: string) => {
+    const newTouched: [CalcField, CalcField] =
+      calcTouched[0] === field
+        ? calcTouched
+        : calcTouched[1] === field
+          ? [field, calcTouched[0]]
+          : [field, calcTouched[0]];
+    setCalcTouched(newTouched);
+    const patch: Partial<EntryCardData> = {};
+    if (field === "units") patch.sharedUnits = rawValue;
+    if (field === "lot") patch.lotWeightKg = rawValue;
+    if (field === "total") patch.sharedTotalKg = rawValue;
+    recomputeCalc(patch, newTouched);
+    onChange(patch);
+  };
   const baseShared = (data.sharedBaseUnit ?? "KG") as "KG" | "L";
   const baseSharedLow = baseShared.toLowerCase();
   const altShared: "KG" | "L" = baseShared === "KG" ? "L" : "KG";
@@ -651,41 +707,41 @@ export function EntryItemCard({
 
       {/* MOTOR DE CÁLCULOS */}
       <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
-        <div className="mb-2 flex items-center gap-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Cálculo de entrada
-          </p>
-          <HelpTip text="Calculadora Inteligente: Altere qualquer campo para que o sistema ajuste os outros automaticamente." />
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Cálculo de entrada
+            </p>
+            <HelpTip text="Calculadora Inteligente: preencha 2 campos e o sistema calcula o terceiro automaticamente (A × B = C)." />
+          </div>
+          {t.sharedActive && (
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <span className="text-[10px] font-medium text-muted-foreground">
+                Calcular por Caixa/Fardo
+              </span>
+              <Switch
+                checked={!!data.wholesaleMode}
+                onCheckedChange={(v) => {
+                  const next: Partial<EntryCardData> = { wholesaleMode: v };
+                  if (!v) {
+                    next.packBoxes = "";
+                    next.packFactor = "";
+                  }
+                  onChange(next);
+                }}
+              />
+            </label>
+          )}
         </div>
 
         {t.sharedActive ? (
           <>
-            {/* Toggle Caixa/Fardo */}
-            <div className="mb-2 flex items-center justify-end">
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  Calcular por Caixa/Fardo
-                </span>
-                <Switch
-                  checked={!!data.wholesaleMode}
-                  onCheckedChange={(v) => {
-                    const next: Partial<EntryCardData> = { wholesaleMode: v };
-                    if (!v) {
-                      next.packBoxes = "";
-                      next.packFactor = "";
-                    }
-                    onChange(next);
-                  }}
-                />
-              </label>
-            </div>
-
             {/* Linha horizontal única de cálculo */}
             <div
               className={cn(
                 "grid items-end gap-2",
                 data.wholesaleMode
-                  ? "grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr]"
+                  ? "grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr]"
                   : "grid-cols-[1fr_auto_1fr_auto_1fr]",
               )}
             >
@@ -699,10 +755,10 @@ export function EntryItemCard({
                       const b = parseDec(v);
                       const f = parseDec(data.packFactor ?? "");
                       if (b > 0 && f > 0) {
-                        Object.assign(
-                          next,
-                          applyBidirectional(data, "units", String(Math.max(0, Math.round(b * f)))),
-                        );
+                        const u = String(Math.max(0, Math.round(b * f)));
+                        next.sharedUnits = u;
+                        touchCalcField("units");
+                        recomputeCalc(next);
                       }
                       onChange(next);
                     }}
@@ -719,10 +775,10 @@ export function EntryItemCard({
                       const b = parseDec(data.packBoxes ?? "");
                       const f = parseDec(v);
                       if (b > 0 && f > 0) {
-                        Object.assign(
-                          next,
-                          applyBidirectional(data, "units", String(Math.max(0, Math.round(b * f)))),
-                        );
+                        const u = String(Math.max(0, Math.round(b * f)));
+                        next.sharedUnits = u;
+                        touchCalcField("units");
+                        recomputeCalc(next);
                       }
                       onChange(next);
                     }}
@@ -738,38 +794,39 @@ export function EntryItemCard({
                 value={data.sharedUnits}
                 onChange={(v) => {
                   const cleaned = v.replace(/[^\d]/g, "");
-                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                  handleCalcChange("units", cleaned);
                   if (data.wholesaleMode) {
                     const f = parseDec(data.packFactor ?? "");
                     const u = parseDec(cleaned);
                     if (f > 0 && u > 0) {
-                      patch.packBoxes = String(Math.max(0, Math.round(u / f)));
+                      onChange({ packBoxes: String(Math.max(0, Math.round(u / f))) });
                     }
                   }
-                  onChange(patch);
                 }}
                 step="1"
                 inputMode="numeric"
                 suffix="un"
+                highlight={computedField === "units"}
               />
               <Op>×</Op>
               <FormulaInput
                 label={`${noun} do Lote (${baseSharedLow}/un)`}
                 value={data.lotWeightKg}
-                onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
+                onChange={(v) => handleCalcChange("lot", v)}
                 step="0.001"
                 suffix={baseSharedLow}
                 displayDecimals={3}
+                highlight={computedField === "lot"}
               />
               <Op>=</Op>
               <FormulaInput
                 label={`${noun} Total`}
                 value={data.sharedTotalKg}
-                onChange={(v) => onChange(applyBidirectional(data, "total", v))}
+                onChange={(v) => handleCalcChange("total", v)}
                 step="0.001"
                 suffix={baseSharedLow}
-                highlight
                 displayDecimals={3}
+                highlight={computedField === "total"}
               />
             </div>
             {/* Conversão bidirecional KG↔L do total */}
