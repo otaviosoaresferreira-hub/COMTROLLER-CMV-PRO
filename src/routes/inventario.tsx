@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import {
   buildLocationTree,
   LOCATION_TYPE_META,
+  SHARED_LOCATION_META,
+  isSharedLocation,
   type LocationNode,
   type LocationTreeNode,
 } from "@/lib/location-hierarchy";
