@@ -450,24 +450,25 @@ export function EntryItemCard({
         </div>
       ) : (
         <div className="space-y-3">
-          {/* L1: Nome + Unidade */}
-          <div className="grid grid-cols-[1fr_88px] gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Nome do insumo *</Label>
+          {/* L1: Nome + Unidade + Categoria + Subcategoria (linha única) */}
+          <div className="grid grid-cols-12 gap-2">
+            <div className="col-span-12 sm:col-span-4 space-y-1">
+              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Nome do insumo *</Label>
               <Input
                 value={data.newName}
                 onChange={(e) => onChange({ newName: e.target.value })}
                 placeholder="Ex.: Tomate italiano"
+                className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Unidade</Label>
+            <div className="col-span-4 sm:col-span-2 space-y-1">
+              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Unidade</Label>
               <Select
                 value={data.newUnit}
                 onValueChange={(v) => onChange({ newUnit: v as EntryUnit })}
                 disabled={data.newSharedEnabled}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -479,13 +480,14 @@ export function EntryItemCard({
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-8 sm:col-span-6">
+              <CategorySubcategorySelect
+                value={data.newCategoryId}
+                onChange={(v) => onChange({ newCategoryId: v })}
+                size="sm"
+              />
+            </div>
           </div>
-
-          {/* L2: Categoria/Subcategoria */}
-          <CategorySubcategorySelect
-            value={data.newCategoryId}
-            onChange={(v) => onChange({ newCategoryId: v })}
-          />
 
           {/* L3: switches lado a lado */}
           <div className="grid grid-cols-2 gap-2">
