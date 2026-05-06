@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronsUpDown, Trash2, Sparkles, Link2, HelpCircle } from "lucide-react";
+import { Check, ChevronsUpDown, Trash2, Sparkles, Link2, HelpCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
