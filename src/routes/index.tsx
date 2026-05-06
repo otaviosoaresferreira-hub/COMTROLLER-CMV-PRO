@@ -360,6 +360,7 @@ type Branch = LocationNode & {
   children: Branch[];
   operation_type?: string | null;
   stock_mode?: string | null;
+  is_shared?: boolean | null;
 };
 
 function LocationBranch({
