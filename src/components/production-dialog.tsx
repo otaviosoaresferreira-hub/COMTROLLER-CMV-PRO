@@ -281,6 +281,29 @@ export function ProductionDialog({
     [data],
   );
 
+  /** Uso Comum da unidade onde a produção está acontecendo.
+   *  Regra: a unidade vem do destino selecionado. Se o destino for uma operação,
+   *  a unidade é seu parent. Se o destino for a própria unidade, ela mesma. */
+  const sharedLocationForDest = useMemo(() => {
+    if (!data || !locationId) return null;
+    const dest = data.locations.find((l) => l.id === locationId);
+    if (!dest) return null;
+    let unitId: string | null = null;
+    if (dest.location_type === "unit") unitId = dest.id;
+    else if (dest.location_type === "operation") unitId = dest.parent_id ?? null;
+    if (!unitId) return null;
+    return (
+      data.locations.find(
+        (l) => l.parent_id === unitId && l.is_shared === true,
+      ) ?? null
+    );
+  }, [data, locationId]);
+
+  // Quando o destino mudar e não houver Uso Comum disponível, desliga a chave.
+  useEffect(() => {
+    if (!sharedLocationForDest && consumeFromShared) setConsumeFromShared(false);
+  }, [sharedLocationForDest, consumeFromShared]);
+
   const realRecipe = data?.recipes.find((r) => r.id === recipeId) ?? null;
 
   // Em modo "Criar Receita na Hora", monta uma receita "virtual" com base nos campos quick.
