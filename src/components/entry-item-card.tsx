@@ -68,6 +68,12 @@ export type EntryCardData = {
   newWeightVariable: boolean;
   /** Peso base por unidade — em KG (string PT-BR ou EN). */
   newStandardWeightKg: string;
+  /** Unidade base do compartilhado: "KG" ou "L". Default "KG". */
+  sharedBaseUnit?: "KG" | "L";
+  /** Habilita fator de conversão entre KG ↔ L. */
+  conversionEnabled?: boolean;
+  /** Fator: 1 [sharedBaseUnit] = X [unidade alternativa]. */
+  conversionFactor?: string;
 
   // Motor de cálculo
   /** Quantidade comprada (em embalagens, ou direto na unidade). */
@@ -76,6 +82,12 @@ export type EntryCardData = {
   packQty: string;
   /** Valor total da linha (R$). */
   totalValue: string;
+
+  // Multiplicador de embalagem (caixas)
+  /** Nº de caixas/fardos. */
+  packBoxes?: string;
+  /** Unidades por caixa. */
+  packFactor?: string;
 
   // Lote — Unidade Compartilhada
   sharedUnits: string;
