@@ -590,34 +590,22 @@ export function EntryItemCard({
                       onChange(patch);
                     }}
                   >
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <ToggleGroupItem
-                          value="fix"
-                          size="sm"
-                          className="h-8 px-2.5 text-[11px] border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
-                        >
-                          {noun} Fixo
-                        </ToggleGroupItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                        Trava o {noun} do Lote no {noun} Base. Qtd × Base = Total automaticamente.
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <ToggleGroupItem
-                          value="var"
-                          size="sm"
-                          className="h-8 px-2.5 text-[11px] border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
-                        >
-                          {noun} Variável
-                        </ToggleGroupItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                        Libera o {noun} do Lote para edição. O custo médio reflete o {noun.toLowerCase()} real recebido sem alterar o {noun} Base.
-                      </TooltipContent>
-                    </Tooltip>
+                    <ToggleGroupItem
+                      value="fix"
+                      size="sm"
+                      title={`Trava o ${noun} do Lote no ${noun} Base. Qtd × Base = Total automaticamente.`}
+                      className="h-8 px-2.5 text-[11px] border border-input bg-background hover:bg-muted data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md data-[state=on]:hover:bg-primary"
+                    >
+                      {noun} Fixo
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="var"
+                      size="sm"
+                      title={`Libera o ${noun} do Lote para edição. O custo médio reflete o ${noun.toLowerCase()} real recebido sem alterar o ${noun} Base.`}
+                      className="h-8 px-2.5 text-[11px] border border-input bg-background hover:bg-muted data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md data-[state=on]:hover:bg-primary"
+                    >
+                      {noun} Variável
+                    </ToggleGroupItem>
                   </ToggleGroup>
                 </div>
                 <div className="flex-1 min-w-[140px] space-y-1">
