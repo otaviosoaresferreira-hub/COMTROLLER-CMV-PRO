@@ -2257,6 +2257,24 @@ export function ProductionDialog({
                   </p>
                 );
               })()}
+              {sharedLocationForDest && (
+                <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={consumeFromShared}
+                    onChange={(e) => setConsumeFromShared(e.target.checked)}
+                  />
+                  <span>
+                    <span className="font-semibold text-amber-700 dark:text-amber-300">
+                      Consumir do Uso Comum
+                    </span>
+                    <span className="ml-1 text-muted-foreground">
+                      — insumos sairão de "{sharedLocationForDest.name}" em vez do Estoque Central.
+                    </span>
+                  </span>
+                </label>
+              )}
             </section>
           )}
         </div>
