@@ -480,15 +480,17 @@ function LocalPage() {
           </section>
         )}
 
-        <section className="grid grid-cols-2 gap-3">
+        <section className={isShared ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 gap-3"}>
           <Button variant="default" className="h-12 gap-2" onClick={() => setCountOpen(true)}>
             <ClipboardCheck className="h-4 w-4" /> Auditoria de turno
           </Button>
-          <ProductionDialog
-            defaultLocationId={locationId}
-            triggerVariant="outline"
-            triggerClassName="h-12 w-full"
-          />
+          {!isShared && (
+            <ProductionDialog
+              defaultLocationId={locationId}
+              triggerVariant="outline"
+              triggerClassName="h-12 w-full"
+            />
+          )}
         </section>
 
         {isShared && (
