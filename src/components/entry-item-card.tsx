@@ -1021,65 +1021,82 @@ function HelpTip({ text }: { text: string }) {
   );
 }
 
-function BoxMultiplier({
+function WholesaleQty({
   boxes,
   factor,
   units,
-  onChange,
+  wholesale,
+  onToggle,
+  onChangeBoxes,
+  onChangeFactor,
+  onChangeUnits,
 }: {
   boxes: string;
   factor: string;
   units: string;
-  onChange: (patch: { boxes?: string; factor?: string }) => void;
+  wholesale: boolean;
+  onToggle: (v: boolean) => void;
+  onChangeBoxes: (v: string) => void;
+  onChangeFactor: (v: string) => void;
+  onChangeUnits: (v: string) => void;
 }) {
   const b = parseDec(boxes);
   const f = parseDec(factor);
   const computed = b > 0 && f > 0 ? Math.round(b * f) : 0;
+  const u = parseDec(units);
   return (
-    <div className="mb-2 flex items-end gap-2 rounded-md border border-dashed border-border bg-background/40 p-2">
-      <div className="flex-1 space-y-1">
-        <div className="flex items-center gap-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Caixas
-          </Label>
-          <HelpTip text="Multiplique caixas pelo Fator de Embalagem para preencher Qtd. Unidades automaticamente. Ex.: 5 caixas × 12 = 60 un." />
-        </div>
-        <Input
-          type="number"
-          inputMode="decimal"
-          step="0.001"
-          min="0"
-          placeholder="0"
-          value={boxes}
-          onChange={(e) => onChange({ boxes: e.target.value })}
-          className="h-9 tabular-nums"
-        />
-      </div>
-      <div className="pb-2 text-base font-semibold text-muted-foreground">×</div>
-      <div className="flex-1 space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          Fator de Embalagem
+    <div className="rounded-md border border-dashed border-border bg-background/40 p-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Quantidade de Unidades
         </Label>
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <span className="text-[10px] font-medium text-muted-foreground">
+            Volume de Compra (Caixa/Fardo)
+          </span>
+          <Switch checked={wholesale} onCheckedChange={onToggle} />
+        </label>
+      </div>
+      {wholesale ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="number"
+            inputMode="decimal"
+            step="1"
+            min="0"
+            placeholder="Volume"
+            value={boxes}
+            onChange={(e) => onChangeBoxes(e.target.value)}
+            className="h-9 w-20 tabular-nums text-center"
+            title="Volume de Compra (caixas/fardos)"
+          />
+          <span className="text-base font-semibold text-muted-foreground">×</span>
+          <Input
+            type="number"
+            inputMode="numeric"
+            step="1"
+            min="0"
+            placeholder="Fator"
+            value={factor}
+            onChange={(e) => onChangeFactor(e.target.value)}
+            className="h-9 w-20 tabular-nums text-center"
+            title="Fator (unidades por embalagem)"
+          />
+          <span className="text-base font-semibold text-muted-foreground">=</span>
+          <div className="flex h-9 min-w-[80px] flex-1 items-center justify-end rounded-md border border-primary/40 bg-primary/10 px-3 text-sm font-bold tabular-nums text-primary">
+            {computed > 0 ? `${computed} un` : (u > 0 ? `${u} un` : "—")}
+          </div>
+        </div>
+      ) : (
         <Input
-          type="number"
+          type="text"
           inputMode="numeric"
-          step="1"
-          min="0"
-          placeholder="un/caixa"
-          value={factor}
-          onChange={(e) => onChange({ factor: e.target.value })}
+          placeholder="0 un"
+          value={units}
+          onChange={(e) => onChangeUnits(e.target.value)}
           className="h-9 tabular-nums"
         />
-      </div>
-      <div className="pb-2 text-base font-semibold text-muted-foreground">=</div>
-      <div className="flex-1 space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          → Qtd. Unidades
-        </Label>
-        <div className="flex h-9 items-center justify-end rounded-md border border-input bg-muted/30 px-3 text-sm font-semibold tabular-nums text-muted-foreground">
-          {computed > 0 ? `${computed} un` : (parseDec(units) > 0 ? `${parseDec(units)} un` : "—")}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
