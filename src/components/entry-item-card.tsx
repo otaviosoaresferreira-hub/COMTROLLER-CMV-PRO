@@ -506,151 +506,151 @@ export function EntryItemCard({
             />
           </div>
 
-          {/* L4: condicional Peso Fixo/Variável + Peso Base */}
+          {/* Bloco compacto: Unidade base + Fator + Tipo + Peso/Volume Base */}
           {data.newSharedEnabled && (
-            <div className="grid grid-cols-[auto_1fr] items-end gap-2 rounded-md border border-primary/30 bg-primary/5 p-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Tipo</Label>
-                <ToggleGroup
-                  type="single"
-                  value={data.newWeightVariable ? "var" : "fix"}
-                  onValueChange={(v) => {
-                    if (!v) return;
-                    const isVar = v === "var";
-                    const patch: Partial<EntryCardData> = { newWeightVariable: isVar };
-                    // Peso Fixo: trava o peso do lote = Peso Base
-                    if (!isVar && data.newStandardWeightKg) {
-                      patch.lotWeightKg = data.newStandardWeightKg;
-                      // recalcula total se houver unidades
-                      const u = parseDec(data.sharedUnits);
-                      const lk = parseDec(data.newStandardWeightKg);
-                      if (u > 0 && lk > 0) {
-                        patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
-                          maximumFractionDigits: 12,
-                          useGrouping: false,
-                        });
-                      }
-                    }
-                    onChange(patch);
-                  }}
-                  className="justify-start"
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ToggleGroupItem
-                        value="fix"
-                        size="sm"
-                        className="h-9 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
-                      >
-                        Peso Fixo
-                      </ToggleGroupItem>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                      Trava o Peso do Lote no Peso Base. Qtd × Peso Base = Total automaticamente.
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ToggleGroupItem
-                        value="var"
-                        size="sm"
-                        className="h-9 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
-                      >
-                        Peso Variável
-                      </ToggleGroupItem>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-                      Libera o Peso do Lote para edição. O custo médio reflete o peso real recebido sem alterar o Peso Base.
-                    </TooltipContent>
-                  </Tooltip>
-                </ToggleGroup>
+            <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-2">
+              {/* Linha A: Unidade base + Fator de Conversão */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-[11px] font-medium text-muted-foreground">Unidade</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={baseShared}
+                    onValueChange={(v) => {
+                      if (!v) return;
+                      onChange({ sharedBaseUnit: v as "KG" | "L" });
+                    }}
+                  >
+                    <ToggleGroupItem
+                      value="KG"
+                      size="sm"
+                      className="h-7 px-2.5 text-[11px] border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold"
+                    >
+                      KG
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="L"
+                      size="sm"
+                      className="h-7 px-2.5 text-[11px] border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold"
+                    >
+                      L
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Switch
+                    checked={!!data.conversionEnabled}
+                    onCheckedChange={(v) => onChange({ conversionEnabled: v })}
+                  />
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                    Fator
+                    <HelpTip text="Ative para vincular KG ↔ L. O fator atua nos bastidores nas fichas técnicas e inventário; o custo final usa sempre a unidade base escolhida." />
+                  </span>
+                </div>
+                {data.conversionEnabled && (
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <span className="tabular-nums text-muted-foreground">1 {baseSharedLow} =</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.001"
+                      min="0"
+                      className="h-7 w-20 text-center text-[11px] tabular-nums"
+                      placeholder="1,000"
+                      value={data.conversionFactor ?? ""}
+                      onChange={(e) => onChange({ conversionFactor: e.target.value })}
+                    />
+                    <span className="tabular-nums text-muted-foreground">{altSharedLow}</span>
+                  </div>
+                )}
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Peso Base ({baseSharedLow}/un) *</Label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.001"
-                  min="0"
-                  placeholder="0,000"
-                  value={data.newStandardWeightKg}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    const patch: Partial<EntryCardData> = { newStandardWeightKg: v };
-                    if (!data.newWeightVariable) {
-                      patch.lotWeightKg = v;
-                      const u = parseDec(data.sharedUnits);
-                      const lk = parseDec(v);
-                      if (u > 0 && lk > 0) {
-                        patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
-                          maximumFractionDigits: 12,
-                          useGrouping: false,
-                        });
-                      }
-                    }
-                    onChange(patch);
-                  }}
-                />
-              </div>
-            </div>
-          )}
 
-          {/* L5: Unidade base (KG/L) + Fator de Conversão */}
-          {data.newSharedEnabled && (
-            <div className="space-y-2 rounded-md border border-border bg-muted/30 p-2">
-              <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-                <Label className="text-xs font-medium">Unidade base</Label>
-                <ToggleGroup
-                  type="single"
-                  value={baseShared}
-                  onValueChange={(v) => {
-                    if (!v) return;
-                    onChange({ sharedBaseUnit: v as "KG" | "L" });
-                  }}
-                  className="justify-start"
-                >
-                  <ToggleGroupItem
-                    value="KG"
-                    size="sm"
-                    className="h-8 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold"
+              {/* Linha B: Tipo (Fixo/Variável) + Peso/Volume Base */}
+              <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Tipo</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={data.newWeightVariable ? "var" : "fix"}
+                    onValueChange={(v) => {
+                      if (!v) return;
+                      const isVar = v === "var";
+                      const patch: Partial<EntryCardData> = { newWeightVariable: isVar };
+                      if (!isVar && data.newStandardWeightKg) {
+                        patch.lotWeightKg = data.newStandardWeightKg;
+                        const u = parseDec(data.sharedUnits);
+                        const lk = parseDec(data.newStandardWeightKg);
+                        if (u > 0 && lk > 0) {
+                          patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
+                            maximumFractionDigits: 12,
+                            useGrouping: false,
+                          });
+                        }
+                      }
+                      onChange(patch);
+                    }}
                   >
-                    KG
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    value="L"
-                    size="sm"
-                    className="h-8 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold"
-                  >
-                    L
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-              <label className="flex cursor-pointer items-center justify-between gap-2 text-xs">
-                <span className="flex items-center gap-1 font-medium">
-                  Fator de Conversão
-                  <HelpTip text="Ative para vincular KG ↔ L. O fator atua nos bastidores nas fichas técnicas e inventário; o custo final usa sempre a unidade base escolhida." />
-                </span>
-                <Switch
-                  checked={!!data.conversionEnabled}
-                  onCheckedChange={(v) => onChange({ conversionEnabled: v })}
-                />
-              </label>
-              {data.conversionEnabled && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="tabular-nums text-muted-foreground">1 {baseSharedLow} =</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <ToggleGroupItem
+                          value="fix"
+                          size="sm"
+                          className="h-8 px-2.5 text-[11px] border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
+                        >
+                          {noun} Fixo
+                        </ToggleGroupItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                        Trava o {noun} do Lote no {noun} Base. Qtd × Base = Total automaticamente.
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <ToggleGroupItem
+                          value="var"
+                          size="sm"
+                          className="h-8 px-2.5 text-[11px] border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
+                        >
+                          {noun} Variável
+                        </ToggleGroupItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                        Libera o {noun} do Lote para edição. O custo médio reflete o {noun.toLowerCase()} real recebido sem alterar o {noun} Base.
+                      </TooltipContent>
+                    </Tooltip>
+                  </ToggleGroup>
+                </div>
+                <div className="flex-1 min-w-[140px] space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    {noun} Base ({baseSharedLow}/un) *
+                  </Label>
                   <Input
                     type="number"
                     inputMode="decimal"
                     step="0.001"
                     min="0"
-                    className="h-8 w-28 text-center tabular-nums"
-                    placeholder="1,000"
-                    value={data.conversionFactor ?? ""}
-                    onChange={(e) => onChange({ conversionFactor: e.target.value })}
+                    className="h-8 text-sm"
+                    placeholder="0,000"
+                    value={data.newStandardWeightKg}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const patch: Partial<EntryCardData> = { newStandardWeightKg: v };
+                      if (!data.lotWeightKg || !data.newWeightVariable) {
+                        patch.lotWeightKg = v;
+                        const u = parseDec(data.sharedUnits);
+                        const lk = parseDec(v);
+                        if (u > 0 && lk > 0) {
+                          patch.sharedTotalKg = (u * lk).toLocaleString("en-US", {
+                            maximumFractionDigits: 12,
+                            useGrouping: false,
+                          });
+                        }
+                      }
+                      onChange(patch);
+                    }}
                   />
-                  <span className="tabular-nums text-muted-foreground">{altSharedLow}</span>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
