@@ -151,6 +151,7 @@ export function makeBlankEntryCard(): EntryCardData {
     totalValue: "",
     packBoxes: "",
     packFactor: "",
+    wholesaleMode: false,
     sharedUnits: "",
     sharedTotalKg: "",
     lotWeightKg: "",
