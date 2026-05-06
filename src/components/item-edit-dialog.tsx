@@ -541,21 +541,23 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Unidade Principal</Label>
-                <Select value={unit} onValueChange={setUnit}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(sharedEnabled ? SHARED_UNIT_OPTIONS : UNIT_OPTIONS).map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {u}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!sharedEnabled && (
+                <div className="space-y-2">
+                  <Label>Unidade Principal</Label>
+                  <Select value={unit} onValueChange={setUnit}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNIT_OPTIONS.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {u}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <CategorySubcategorySelect
                 value={categoryId === "none" ? "" : categoryId}
                 onChange={(v) => setCategoryId(v || "none")}
@@ -595,59 +597,157 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                 )}
               </div>
 
-              <div
-                className={cn(
-                  "flex items-start justify-between gap-3 rounded-md border p-3 transition-colors",
-                  cmvLocked
-                    ? "border-border bg-muted/40"
-                    : contabilizaCmv
-                      ? "border-emerald-500/40 bg-emerald-500/10"
-                      : "border-amber-500/40 bg-amber-500/10",
-                )}
-              >
-                <div className="space-y-1">
-                  <Label className="flex items-center gap-1.5 text-sm font-semibold">
-                    <span
-                      className={cn(
-                        "inline-block h-2 w-2 rounded-full",
-                        cmvLocked
-                          ? "bg-muted-foreground/50"
-                          : contabilizaCmv
-                            ? "bg-emerald-500"
-                            : "bg-amber-500",
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div
+                  className={cn(
+                    "flex items-start justify-between gap-3 rounded-md border p-3 transition-colors",
+                    cmvLocked
+                      ? "border-border bg-muted/40"
+                      : contabilizaCmv
+                        ? "border-emerald-500/40 bg-emerald-500/10"
+                        : "border-amber-500/40 bg-amber-500/10",
+                  )}
+                >
+                  <div className="space-y-1">
+                    <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                      <span
+                        className={cn(
+                          "inline-block h-2 w-2 rounded-full",
+                          cmvLocked
+                            ? "bg-muted-foreground/50"
+                            : contabilizaCmv
+                              ? "bg-emerald-500"
+                              : "bg-amber-500",
+                        )}
+                      />
+                      Contabilizar CMV?
+                      {cmvLocked && (
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                                aria-label="Travado"
+                              >
+                                <Lock className="h-3 w-3" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[260px] text-xs">
+                              Este item possui histórico de movimentação e sua categoria de custo
+                              não pode ser alterada para preservar a integridade dos relatórios.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
-                    />
-                    Contabilizar no cálculo de CMV?
-                    {cmvLocked && (
-                      <TooltipProvider delayDuration={150}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground"
-                              aria-label="Travado"
-                            >
-                              <Lock className="h-3 w-3" />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[260px] text-xs">
-                            Este item possui histórico de movimentação e sua categoria de custo
-                            não pode ser alterada para preservar a integridade dos relatórios.
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    Desative para itens que não são alimentos, como material de limpeza ou descartáveis.
-                  </p>
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Desative para não-alimentos (limpeza, descartáveis).
+                    </p>
+                  </div>
+                  <Switch
+                    checked={contabilizaCmv}
+                    onCheckedChange={setContabilizaCmv}
+                    disabled={cmvLocked}
+                    className="data-[state=checked]:bg-emerald-600"
+                  />
                 </div>
-                <Switch
-                  checked={contabilizaCmv}
-                  onCheckedChange={setContabilizaCmv}
-                  disabled={cmvLocked}
-                  className="data-[state=checked]:bg-emerald-600"
-                />
+
+                <div
+                  className={cn(
+                    "flex items-start justify-between gap-3 rounded-md border p-3 transition-colors",
+                    sharedEnabled
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border bg-muted/30",
+                  )}
+                >
+                  <div className="space-y-1">
+                    <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                      <span
+                        className={cn(
+                          "inline-block h-2 w-2 rounded-full",
+                          sharedEnabled ? "bg-primary" : "bg-muted-foreground/50",
+                        )}
+                      />
+                      Unidade Compartilhada
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Conta por UN, custo pelo peso (KG/L).
+                    </p>
+                  </div>
+                  <Switch
+                    checked={sharedEnabled}
+                    onCheckedChange={handleSharedToggle}
+                  />
+                </div>
               </div>
+
+              {sharedEnabled && (
+                <div className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Unidade de medida
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {SHARED_UNIT_OPTIONS.map((u) => {
+                        const active = unit.toUpperCase() === u;
+                        return (
+                          <button
+                            key={u}
+                            type="button"
+                            onClick={() => setUnit(u)}
+                            className={cn(
+                              "rounded-md border px-3 py-2 text-xs font-semibold transition",
+                              active
+                                ? "border-primary bg-background text-primary shadow-sm"
+                                : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
+                            )}
+                          >
+                            {u}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Tipo de peso por unidade
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSharedMode("FIXED")}
+                        className={cn(
+                          "rounded-md border px-3 py-2 text-left text-xs transition",
+                          sharedMode === "FIXED"
+                            ? "border-primary bg-background shadow-sm"
+                            : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
+                        )}
+                      >
+                        <div className="font-semibold text-foreground">Peso Fixo</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Ex: Balde 3 kg, Pacote 5 kg
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSharedMode("VARIABLE")}
+                        className={cn(
+                          "rounded-md border px-3 py-2 text-left text-xs transition",
+                          sharedMode === "VARIABLE"
+                            ? "border-primary bg-background shadow-sm"
+                            : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
+                        )}
+                      >
+                        <div className="font-semibold text-foreground">Peso Variável</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Ex: Peça de Picanha, Costela
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </section>
 
@@ -655,66 +755,12 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
 
             {/* Fatores de Conversão */}
             <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">Fatores de Conversão</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Configure o peso em kg usado apenas quando a operação for por unidades.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Label className="text-xs">Peso variável (un. compartilhada)</Label>
-                  <Switch
-                      checked={effectiveSharedEnabled}
-                    onCheckedChange={handleSharedToggle}
-                  />
-                </div>
+              <div>
+                <h3 className="text-sm font-semibold">Pesos & Conversão</h3>
+                <p className="text-xs text-muted-foreground">
+                  Configure o peso em kg usado quando a operação for por unidades.
+                </p>
               </div>
-
-              {effectiveSharedEnabled && (
-                <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
-                  <div className="space-y-1 text-xs">
-                    <p className="font-semibold text-primary">
-                      Unidade compartilhada: contado em UN com peso médio em KG.
-                    </p>
-                    <p className="text-muted-foreground">
-                      Defina abaixo se o peso por unidade é fixo ou variável.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSharedMode("FIXED")}
-                      className={cn(
-                        "rounded-md border px-3 py-2 text-left text-xs transition",
-                        sharedMode === "FIXED"
-                          ? "border-primary bg-background shadow-sm"
-                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
-                      )}
-                    >
-                      <div className="font-semibold text-foreground">Peso Fixo</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Ex: Balde de 3 kg, Pacote de 5 kg
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSharedMode("VARIABLE")}
-                      className={cn(
-                        "rounded-md border px-3 py-2 text-left text-xs transition",
-                        sharedMode === "VARIABLE"
-                          ? "border-primary bg-background shadow-sm"
-                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
-                      )}
-                    >
-                      <div className="font-semibold text-foreground">Peso Variável</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Ex: Peça de Picanha, Costela
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
