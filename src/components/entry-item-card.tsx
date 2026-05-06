@@ -312,7 +312,7 @@ export function EntryItemCard({
   const lastLoadedItemId = useRef<string>("");
   useEffect(() => {
     if (data.mode !== "existing") return;
-    if (!selected || !selected.shared_unit_enabled) return;
+    if (!selected) return;
     if (lastLoadedItemId.current === selected.id) return;
     lastLoadedItemId.current = selected.id;
     const stdKg = Number(selected.standard_weight_g ?? 0) / 1000;
