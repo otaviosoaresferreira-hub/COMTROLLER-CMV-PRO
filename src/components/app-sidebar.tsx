@@ -179,14 +179,14 @@ export function AppSidebar() {
             />
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-1 w-full">
+          <div className="flex flex-col items-stretch gap-1 w-full p-0 m-0">
             <img
               src={logoSrc}
               alt="Controller CMV Pro"
-              className="block mx-auto"
-              style={{ width: "160px", height: "auto", maxWidth: "none", padding: 0, margin: "0 auto" }}
+              className="block"
+              style={{ width: "100%", height: "auto", maxWidth: "none", padding: 0, margin: 0, display: "block" }}
             />
-            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground pb-2">
+            <p className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground pb-2">
               {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
               {isManager ? "Modo Gestor" : "Operacional"}
             </p>
