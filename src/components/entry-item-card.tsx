@@ -623,20 +623,7 @@ export function EntryItemCard({
               }
             />
           </div>
-        )}
-        {t.sharedActive && !t.weightVariable && t.standardKg > 0 && parseDec(data.lotWeightKg) > 0 &&
-          Math.abs(parseDec(data.lotWeightKg) - t.standardKg) / t.standardKg > 0.001 && (
-            <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                <strong>Divergência de Embalagem:</strong> O peso deste lote (
-                {parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un)
-                difere do padrão cadastrado ({t.standardKg.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un).
-                Se a embalagem mudou, atualize o cadastro ou use "Peso Variável".
-              </span>
-            </div>
-          )}
-        {/* placeholder */}
+        ) : (
           // NÃO-SHARED: Quantidade × Un/Emb = Total
           <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
             <FormulaInput
@@ -670,6 +657,18 @@ export function EntryItemCard({
             />
           </div>
         )}
+        {t.sharedActive && !t.weightVariable && t.standardKg > 0 && parseDec(data.lotWeightKg) > 0 &&
+          Math.abs(parseDec(data.lotWeightKg) - t.standardKg) / t.standardKg > 0.001 && (
+            <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                <strong>Divergência de Embalagem:</strong> O peso deste lote (
+                {parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un)
+                difere do padrão cadastrado ({t.standardKg.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un).
+                Se a embalagem mudou, atualize o cadastro ou use "Peso Variável".
+              </span>
+            </div>
+          )}
 
         {/* Valor Total */}
         <div className="mt-3 grid grid-cols-2 gap-2">
