@@ -660,29 +660,55 @@ export function EntryItemCard({
 
         {t.sharedActive ? (
           <>
-            {/* Multiplicador de embalagem (Caixas × Fator → Qtd. Unidades) */}
-            <BoxMultiplier
+            {/* Quantidade de Unidades + Toggle Modo Atacado */}
+            <WholesaleQty
               boxes={data.packBoxes ?? ""}
               factor={data.packFactor ?? ""}
               units={data.sharedUnits}
-              onChange={(patch) => {
-                const boxes = patch.boxes !== undefined ? patch.boxes : (data.packBoxes ?? "");
-                const factor =
-                  patch.factor !== undefined ? patch.factor : (data.packFactor ?? "");
-                const next: Partial<EntryCardData> = {
-                  packBoxes: boxes,
-                  packFactor: factor,
-                };
-                const b = parseDec(boxes);
-                const f = parseDec(factor);
-                if (b > 0 && f > 0) {
-                  const newUnits = String(Math.round(b * f));
-                  Object.assign(next, applyBidirectional(data, "units", newUnits));
+              wholesale={!!data.wholesaleMode}
+              onToggle={(v) => {
+                const next: Partial<EntryCardData> = { wholesaleMode: v };
+                if (!v) {
+                  next.packBoxes = "";
+                  next.packFactor = "";
                 }
                 onChange(next);
               }}
+              onChangeBoxes={(boxes) => {
+                const factor = data.packFactor ?? "";
+                const next: Partial<EntryCardData> = { packBoxes: boxes };
+                const b = parseDec(boxes);
+                const f = parseDec(factor);
+                if (b > 0 && f > 0) {
+                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                }
+                onChange(next);
+              }}
+              onChangeFactor={(factor) => {
+                const boxes = data.packBoxes ?? "";
+                const next: Partial<EntryCardData> = { packFactor: factor };
+                const b = parseDec(boxes);
+                const f = parseDec(factor);
+                if (b > 0 && f > 0) {
+                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                }
+                onChange(next);
+              }}
+              onChangeUnits={(v) => {
+                const cleaned = v.replace(/[^\d]/g, "");
+                const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                const f = parseDec(data.packFactor ?? "");
+                const u = parseDec(cleaned);
+                if (f > 0 && u > 0) {
+                  patch.packBoxes = (u / f).toLocaleString("en-US", {
+                    maximumFractionDigits: 3,
+                    useGrouping: false,
+                  });
+                }
+                onChange(patch);
+              }}
             />
-            <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
+            <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-end gap-2">
               <FormulaInput
                 label="Qtd. Unidades"
                 value={data.sharedUnits}
