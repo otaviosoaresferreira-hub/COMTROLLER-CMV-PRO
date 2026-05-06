@@ -680,7 +680,10 @@ export function EntryItemCard({
                 const b = parseDec(boxes);
                 const f = parseDec(factor);
                 if (b > 0 && f > 0) {
-                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                  Object.assign(
+                    next,
+                    applyBidirectional(data, "units", String(Math.max(0, Math.round(b / f)))),
+                  );
                 }
                 onChange(next);
               }}
@@ -690,7 +693,10 @@ export function EntryItemCard({
                 const b = parseDec(boxes);
                 const f = parseDec(factor);
                 if (b > 0 && f > 0) {
-                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                  Object.assign(
+                    next,
+                    applyBidirectional(data, "units", String(Math.max(0, Math.round(b / f)))),
+                  );
                 }
                 onChange(next);
               }}
@@ -700,7 +706,8 @@ export function EntryItemCard({
                 const f = parseDec(data.packFactor ?? "");
                 const u = parseDec(cleaned);
                 if (f > 0 && u > 0) {
-                  patch.packBoxes = (u / f).toLocaleString("en-US", {
+                  // Units × Fator = Volume (inverso de Volume / Fator = Units)
+                  patch.packBoxes = (u * f).toLocaleString("en-US", {
                     maximumFractionDigits: 3,
                     useGrouping: false,
                   });
