@@ -606,7 +606,6 @@ export function EntryItemCard({
               step="0.001"
               suffix="kg"
               displayDecimals={3}
-              readOnly={t.sharedActive && !t.weightVariable}
             />
             <Op>=</Op>
             <FormulaInput
