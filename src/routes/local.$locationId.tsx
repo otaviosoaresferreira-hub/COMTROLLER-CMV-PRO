@@ -1421,7 +1421,7 @@ function ItemHistoryDialog({
           .or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`)
           .gte("created_at", since.toISOString())
           .order("created_at", { ascending: false }),
-        supabase.from("locations").select("id,name,stock_mode"),
+        supabase.from("locations").select("id,name,stock_mode,is_shared"),
       ]);
       if (moves.error) throw moves.error;
       if (locs.error) throw locs.error;
