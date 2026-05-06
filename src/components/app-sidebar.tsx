@@ -186,10 +186,15 @@ export function AppSidebar() {
               className="block"
               style={{ width: "100%", height: "auto", maxWidth: "none", padding: 0, margin: 0, marginTop: 0, marginBottom: 0, display: "block" }}
             />
-            <p className="flex items-center justify-center text-[10px] uppercase tracking-wide leading-none text-muted-foreground p-0 m-0">
-              {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
-              {isManager ? "Modo Gestor" : "Operacional"}
-            </p>
+            <div className="flex flex-col items-center justify-center gap-1 my-2 px-2">
+              <span className="text-xs font-semibold tracking-wide leading-none text-foreground">
+                Controller CMV Pro
+              </span>
+              <span className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground">
+                {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
+                {isManager ? "Modo Gestor" : "Operacional"}
+              </span>
+            </div>
           </div>
         )}
       </SidebarHeader>
