@@ -77,7 +77,7 @@ type ItemRow = {
   standard_weight_g?: number;
   avg_weight_g?: number;
 };
-type LocationRow = { id: string; name: string };
+type LocationRow = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null };
 type StockRow = { item_id: string; location_id: string; current_stock: number };
 type RecipeRow = {
   id: string;
@@ -198,7 +198,7 @@ export function ProductionDialog({
             "id,name,unit,cost_price,category_id,shared_unit_enabled,standard_weight_g,avg_weight_g",
           )
           .eq("is_active", true),
-        supabase.from("locations").select("id,name,stock_mode").order("name"),
+        supabase.from("locations").select("id,name,stock_mode,is_shared").order("name"),
         supabase.from("stock_levels").select("item_id,location_id,current_stock"),
         supabase.from("categories").select("id,name"),
         supabase
@@ -2183,7 +2183,7 @@ export function ProductionDialog({
                 Destino do produto pronto
               </Label>
               <div className="grid grid-cols-2 gap-2">
-                {(data?.locations ?? []).map((l) => {
+                {(data?.locations ?? []).filter((l) => !l.is_shared).map((l) => {
                   const isDirect = ((l as { stock_mode?: string | null }).stock_mode ?? "traditional") === "direct";
                   return (
                     <Button
