@@ -14,7 +14,7 @@ import { ManagerModeProvider } from "@/lib/manager-mode";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ManagerModeToggle } from "@/components/manager-mode-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
+
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { BrandingProvider, useBranding, DEFAULT_LOGO_URL } from "@/lib/branding";
 import appCss from "../styles.css?url";
