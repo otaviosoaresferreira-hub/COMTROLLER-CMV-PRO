@@ -491,6 +491,21 @@ function LocalPage() {
           />
         </section>
 
+        {isShared && (
+          <section className={`flex items-start gap-3 rounded-2xl border p-4 ${SHARED_LOCATION_META.tone}`}>
+            <SHARED_LOCATION_META.icon className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="font-semibold">{SHARED_LOCATION_META.label}</p>
+              <p className="text-xs opacity-90">
+                Local compartilhado entre operações da unidade. Saídas manuais
+                (descarte, alimentação, transferência saindo) ficam bloqueadas — o
+                consumo acontece automaticamente via produção. Contagem de inventário
+                não é obrigatória.
+              </p>
+            </div>
+          </section>
+        )}
+
         {/* Transferência em lote — abre modal com TODOS os itens para digitar quantidades */}
         <section className="flex flex-wrap items-center gap-2">
           {batchMode ? (
@@ -509,7 +524,7 @@ function LocalPage() {
                 Cancelar seleção
               </Button>
             </>
-          ) : (
+          ) : isShared ? null : (
             <>
               <Button
                 size="sm"
