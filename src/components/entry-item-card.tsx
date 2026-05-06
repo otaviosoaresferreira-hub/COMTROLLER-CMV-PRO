@@ -713,7 +713,7 @@ export function EntryItemCard({
               />
               <Op>×</Op>
               <FormulaInput
-                label={`Peso do Lote Atual (${packLabel})`}
+                label={`${noun} do Lote Atual (${packLabel})`}
                 value={data.lotWeightKg}
                 onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
                 step="0.001"
@@ -722,7 +722,7 @@ export function EntryItemCard({
               />
               <Op>=</Op>
               <FormulaInput
-                label="Peso Total"
+                label={`${noun} Total`}
                 value={data.sharedTotalKg}
                 onChange={(v) => onChange(applyBidirectional(data, "total", v))}
                 step="0.001"
