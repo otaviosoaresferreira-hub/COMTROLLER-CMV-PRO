@@ -660,74 +660,106 @@ export function EntryItemCard({
 
         {t.sharedActive ? (
           <>
-            {/* Quantidade de Unidades + Toggle Modo Atacado */}
-            <WholesaleQty
-              boxes={data.packBoxes ?? ""}
-              factor={data.packFactor ?? ""}
-              units={data.sharedUnits}
-              wholesale={!!data.wholesaleMode}
-              onToggle={(v) => {
-                const next: Partial<EntryCardData> = { wholesaleMode: v };
-                if (!v) {
-                  next.packBoxes = "";
-                  next.packFactor = "";
-                }
-                onChange(next);
-              }}
-              onChangeBoxes={(boxes) => {
-                const factor = data.packFactor ?? "";
-                const next: Partial<EntryCardData> = { packBoxes: boxes };
-                const b = parseDec(boxes);
-                const f = parseDec(factor);
-                if (b > 0 && f > 0) {
-                  Object.assign(
-                    next,
-                    applyBidirectional(data, "units", String(Math.max(0, Math.round(b / f)))),
-                  );
-                }
-                onChange(next);
-              }}
-              onChangeFactor={(factor) => {
-                const boxes = data.packBoxes ?? "";
-                const next: Partial<EntryCardData> = { packFactor: factor };
-                const b = parseDec(boxes);
-                const f = parseDec(factor);
-                if (b > 0 && f > 0) {
-                  Object.assign(
-                    next,
-                    applyBidirectional(data, "units", String(Math.max(0, Math.round(b / f)))),
-                  );
-                }
-                onChange(next);
-              }}
-              onChangeUnits={(v) => {
-                const cleaned = v.replace(/[^\d]/g, "");
-                const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
-                const f = parseDec(data.packFactor ?? "");
-                const u = parseDec(cleaned);
-                if (f > 0 && u > 0) {
-                  // Units × Fator = Volume (inverso de Volume / Fator = Units)
-                  patch.packBoxes = (u * f).toLocaleString("en-US", {
-                    maximumFractionDigits: 3,
-                    useGrouping: false,
-                  });
-                }
-                onChange(patch);
-              }}
-            />
-            <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+            {/* Toggle Caixa/Fardo */}
+            <div className="mb-2 flex items-center justify-end">
+              <label className="flex cursor-pointer items-center gap-1.5">
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  Calcular por Caixa/Fardo
+                </span>
+                <Switch
+                  checked={!!data.wholesaleMode}
+                  onCheckedChange={(v) => {
+                    const next: Partial<EntryCardData> = { wholesaleMode: v };
+                    if (!v) {
+                      next.packBoxes = "";
+                      next.packFactor = "";
+                    }
+                    onChange(next);
+                  }}
+                />
+              </label>
+            </div>
+
+            {/* Linha horizontal única de cálculo */}
+            <div
+              className={cn(
+                "grid items-end gap-2",
+                data.wholesaleMode
+                  ? "grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr]"
+                  : "grid-cols-[1fr_auto_1fr_auto_1fr]",
+              )}
+            >
+              {data.wholesaleMode && (
+                <>
+                  <FormulaInput
+                    label="Caixas"
+                    value={data.packBoxes ?? ""}
+                    onChange={(v) => {
+                      const next: Partial<EntryCardData> = { packBoxes: v };
+                      const b = parseDec(v);
+                      const f = parseDec(data.packFactor ?? "");
+                      if (b > 0 && f > 0) {
+                        Object.assign(
+                          next,
+                          applyBidirectional(data, "units", String(Math.max(0, Math.round(b * f)))),
+                        );
+                      }
+                      onChange(next);
+                    }}
+                    step="1"
+                    inputMode="numeric"
+                    suffix="cx"
+                  />
+                  <Op>×</Op>
+                  <FormulaInput
+                    label="Un/Caixa"
+                    value={data.packFactor ?? ""}
+                    onChange={(v) => {
+                      const next: Partial<EntryCardData> = { packFactor: v };
+                      const b = parseDec(data.packBoxes ?? "");
+                      const f = parseDec(v);
+                      if (b > 0 && f > 0) {
+                        Object.assign(
+                          next,
+                          applyBidirectional(data, "units", String(Math.max(0, Math.round(b * f)))),
+                        );
+                      }
+                      onChange(next);
+                    }}
+                    step="1"
+                    inputMode="numeric"
+                    suffix="un"
+                  />
+                  <Op>=</Op>
+                </>
+              )}
               <FormulaInput
-                label={`${noun} do Lote (${packLabel})`}
+                label="Qtd. Unidades"
+                value={data.sharedUnits}
+                onChange={(v) => {
+                  const cleaned = v.replace(/[^\d]/g, "");
+                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                  if (data.wholesaleMode) {
+                    const f = parseDec(data.packFactor ?? "");
+                    const u = parseDec(cleaned);
+                    if (f > 0 && u > 0) {
+                      patch.packBoxes = String(Math.max(0, Math.round(u / f)));
+                    }
+                  }
+                  onChange(patch);
+                }}
+                step="1"
+                inputMode="numeric"
+                suffix="un"
+              />
+              <Op>×</Op>
+              <FormulaInput
+                label={`${noun} do Lote (${baseSharedLow}/un)`}
                 value={data.lotWeightKg}
                 onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
                 step="0.001"
                 suffix={baseSharedLow}
                 displayDecimals={3}
-                hint={
-                  parseDec(data.sharedUnits) > 0
-                    ? `× ${parseDec(data.sharedUnits).toLocaleString("pt-BR")} un`
-                    : undefined
-                }
               />
               <Op>=</Op>
               <FormulaInput
