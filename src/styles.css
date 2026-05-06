@@ -182,4 +182,11 @@
     color: color-mix(in oklab, var(--foreground) 78%, transparent);
     font-weight: 500;
   }
+
+  /* Hover/pressed oficial em qualquer botão de primária — laranja escurecido. */
+  .bg-primary:hover,
+  .bg-primary:active {
+    background-color: var(--primary-hover) !important;
+  }
+}
 }
