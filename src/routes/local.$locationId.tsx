@@ -57,6 +57,7 @@ import { toast } from "sonner";
 import {
   getBreadcrumb,
   LOCATION_TYPE_META,
+  SHARED_LOCATION_META,
   type LocationType,
   type LocationNode,
 } from "@/lib/location-hierarchy";
