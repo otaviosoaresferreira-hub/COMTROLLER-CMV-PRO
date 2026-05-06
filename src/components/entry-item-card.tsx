@@ -1049,7 +1049,7 @@ function WholesaleQty({
 }) {
   const b = parseDec(boxes);
   const f = parseDec(factor);
-  const computed = b > 0 && f > 0 ? Math.round(b * f) : 0;
+  const computed = b > 0 && f > 0 ? Math.max(0, Math.round(b / f)) : 0;
   const u = parseDec(units);
   return (
     <div className="rounded-md border border-dashed border-border bg-background/40 p-2">
