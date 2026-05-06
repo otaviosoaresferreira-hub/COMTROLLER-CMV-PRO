@@ -10,6 +10,8 @@ import { Warehouse, MapPin, ClipboardList, AlertTriangle, ChefHat, Zap, Building
 import {
   buildLocationTree,
   LOCATION_TYPE_META,
+  SHARED_LOCATION_META,
+  isSharedLocation,
   type LocationType,
   type LocationNode,
 } from "@/lib/location-hierarchy";
