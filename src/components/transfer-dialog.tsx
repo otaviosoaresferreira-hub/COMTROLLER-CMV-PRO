@@ -53,7 +53,7 @@ type Item = {
   avg_weight_g?: number;
   standard_weight_g?: number;
 };
-type Location = { id: string; name: string; stock_mode?: string | null };
+type Location = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null };
 type StockLevel = { item_id: string; location_id: string; current_stock: number };
 type LocationItemFactor = {
   location_id: string;
@@ -413,8 +413,12 @@ export function TransferDialog({
 
       const fromName =
         locations.find((l) => l.id === fromId)?.name ?? "Origem";
-      const toName = locations.find((l) => l.id === toId)?.name ?? "Destino";
-      const transferNote = `Remanejamento Interno: ${fromName} → ${toName}`;
+      const toLoc = locations.find((l) => l.id === toId);
+      const toName = toLoc?.name ?? "Destino";
+      const toIsShared = !!toLoc?.is_shared;
+      const transferNote = toIsShared
+        ? `Remanejamento Interno: ${fromName} → ${toName} (Uso Comum — saldo substituído)`
+        : `Remanejamento Interno: ${fromName} → ${toName}`;
 
       // Aplica cada item
       for (const [iid, total] of consolidated) {
@@ -454,8 +458,13 @@ export function TransferDialog({
 
         const newFromQty = Number(fromLevel?.current_stock ?? 0) - realTaken;
         // Destino recebe a mesma proporção (aplica fator de rendimento sobre o real)
+        // Uso Comum: saldo é SUBSTITUÍDO pela nova entrada (não somado).
+        // Sobras anteriores (sal, óleo, condimentos) são irrisórias e
+        // impossíveis de medir com precisão — a nova transferência assume o controle.
         const expectedReceiveQty = realTaken * factor;
-        const newToQty = Number(toLevel?.current_stock ?? 0) + expectedReceiveQty;
+        const newToQty = toIsShared
+          ? expectedReceiveQty
+          : Number(toLevel?.current_stock ?? 0) + expectedReceiveQty;
 
         const { error: e1 } = await supabase
           .from("stock_levels")
