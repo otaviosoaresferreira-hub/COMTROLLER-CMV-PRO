@@ -548,7 +548,7 @@ export function EntryItemCard({
                     onCheckedChange={(v) => onChange({ conversionEnabled: v })}
                   />
                   <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                    Fator
+                    Fator de Conversão
                     <HelpTip text="Ative para vincular KG ↔ L. O fator atua nos bastidores nas fichas técnicas e inventário; o custo final usa sempre a unidade base escolhida." />
                   </span>
                 </div>
