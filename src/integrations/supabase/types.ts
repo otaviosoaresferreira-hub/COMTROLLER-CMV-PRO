@@ -1110,6 +1110,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_shared: boolean
           is_system: boolean
           location_type: string
           name: string
@@ -1121,6 +1122,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_shared?: boolean
           is_system?: boolean
           location_type?: string
           name: string
@@ -1132,6 +1134,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_shared?: boolean
           is_system?: boolean
           location_type?: string
           name?: string
@@ -2010,6 +2013,10 @@ export type Database = {
       current_user_org_id: { Args: never; Returns: string }
       current_user_org_ids: { Args: never; Returns: string[] }
       ensure_my_primary_organization: { Args: never; Returns: string }
+      ensure_shared_location_for_unit: {
+        Args: { _unit_id: string }
+        Returns: string
+      }
       ensure_uncategorized_category: {
         Args: { _org_id: string }
         Returns: string

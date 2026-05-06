@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import {
   buildLocationTree,
   LOCATION_TYPE_META,
+  SHARED_LOCATION_META,
+  isSharedLocation,
   type LocationNode,
   type LocationTreeNode,
 } from "@/lib/location-hierarchy";
@@ -42,7 +44,7 @@ function InventarioHubContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("locations")
-        .select("id,name,operation_type,parent_id,location_type,stock_mode")
+        .select("id,name,operation_type,parent_id,location_type,stock_mode,is_shared")
         .order("name");
       if (error) throw error;
       return (data ?? []) as LocationNode[];
@@ -160,7 +162,10 @@ function LocationTreeRow({
   depth: number;
 }) {
   const meta = LOCATION_TYPE_META[node.location_type];
-  const Icon = meta.icon;
+  const shared = isSharedLocation(node);
+  const Icon = shared ? SHARED_LOCATION_META.icon : meta.icon;
+  const tone = shared ? SHARED_LOCATION_META.tone : meta.tone;
+  const label = shared ? SHARED_LOCATION_META.label : meta.label;
   const childCount = node.children.length;
 
   return (
@@ -169,7 +174,8 @@ function LocationTreeRow({
         to="/inventario/$locationId"
         params={{ locationId: node.id }}
         className={cn(
-          "flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm transition-colors hover:bg-accent",
+          "flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors hover:bg-accent",
+          shared ? "border-amber-500/40 bg-amber-500/5" : "border-border bg-card",
         )}
         style={{ marginLeft: depth * 20 }}
       >
@@ -177,17 +183,26 @@ function LocationTreeRow({
           <div
             className={cn(
               "grid h-8 w-8 shrink-0 place-items-center rounded-lg border",
-              meta.tone,
+              tone,
             )}
           >
             <Icon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <p className="truncate font-medium capitalize">{node.name}</p>
-            <p className="text-xs text-muted-foreground">{meta.label}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {shared && (
+            <Badge
+              variant="outline"
+              className="border-amber-500/40 bg-amber-500/10 text-[10px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300"
+              title="Contagem não obrigatória para locais de Uso Comum"
+            >
+              Contagem opcional
+            </Badge>
+          )}
           {childCount > 0 && (
             <Badge variant="secondary" className="font-normal">
               {childCount} sub-local{childCount === 1 ? "" : "is"}

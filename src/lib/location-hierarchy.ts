@@ -4,7 +4,7 @@
 // parent_id (auto-FK). Esta camada centraliza nomenclatura e regras
 // de aninhamento usadas pela UI para evitar divergência entre telas.
 
-import { Warehouse, Building2, MapPin, type LucideIcon } from "lucide-react";
+import { Warehouse, Building2, MapPin, Soup, type LucideIcon } from "lucide-react";
 
 export type LocationType = "cd" | "unit" | "operation";
 
@@ -13,6 +13,7 @@ export type LocationNode = {
   name: string;
   parent_id: string | null;
   location_type: LocationType;
+  is_shared?: boolean | null;
   // Demais campos passam adiante intactos.
   // Tipado como Record<string, unknown> para não acoplar à shape exata.
   [key: string]: unknown;
@@ -44,6 +45,20 @@ export const LOCATION_TYPE_META: Record<
       "border-accent/40 bg-accent/40 text-accent-foreground",
   },
 };
+
+/** Metadados visuais para o "Uso Comum" (local compartilhado dentro de uma Unidade). */
+export const SHARED_LOCATION_META = {
+  label: "Uso Comum",
+  short: "Uso Comum",
+  icon: Soup,
+  tone:
+    "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+} as const;
+
+/** True se o local é um "Uso Comum" (compartilhado entre operações da unidade). */
+export function isSharedLocation(loc: { is_shared?: boolean | null } | null | undefined): boolean {
+  return !!loc?.is_shared;
+}
 
 /** True quando `parentType` é um pai válido para `childType`. */
 export function isValidParent(
