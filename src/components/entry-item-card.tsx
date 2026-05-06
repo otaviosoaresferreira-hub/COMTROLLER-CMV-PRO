@@ -811,8 +811,12 @@ export function EntryItemCard({
               onChange={(e) => onChange({ totalValue: e.target.value })}
             />
           </div>
-          {t.totalValue > 0 && (
-            <div className="grid grid-cols-2 gap-2">
+          {t.totalValue > 0 && (() => {
+            const convFactor = parseDec(data.conversionFactor ?? "");
+            const showAlt = !!(t.sharedActive && data.conversionEnabled && convFactor > 0 && t.totalKg > 0);
+            const cols = showAlt ? "grid-cols-3" : "grid-cols-2";
+            return (
+            <div className={cn("grid gap-2", cols)}>
               <CostCard
                 label={`Custo / ${t.sharedActive ? baseSharedLow : totalLabel.toString().toLowerCase()}`}
                 value={
@@ -838,8 +842,17 @@ export function EntryItemCard({
                 }
                 tone="alt"
               />
+              {showAlt && (
+                <CostCard
+                  label={`Custo / ${altSharedLow} (equiv.)`}
+                  value={fmtBRL(t.totalValue / (t.totalKg * convFactor))}
+                  tone="primary"
+                />
+              )}
             </div>
-          )}
+            );
+          })()}
+
         </div>
       </div>
 
