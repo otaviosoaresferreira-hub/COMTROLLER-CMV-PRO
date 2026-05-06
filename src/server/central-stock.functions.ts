@@ -109,7 +109,7 @@ export const getCentralStock = createServerFn({ method: "GET" })
           )
           .eq("org_id", orgId)
           .limit(10000),
-        supabase.from("locations").select("id,name,stock_mode").eq("org_id", orgId).order("name").limit(10000),
+        supabase.from("locations").select("id,name,stock_mode,is_shared").eq("org_id", orgId).order("name").limit(10000),
         supabase
           .from("stock_levels")
           .select("item_id,location_id,current_stock,expiry_date")
