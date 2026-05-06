@@ -2183,7 +2183,7 @@ export function ProductionDialog({
                 Destino do produto pronto
               </Label>
               <div className="grid grid-cols-2 gap-2">
-                {(data?.locations ?? []).map((l) => {
+                {(data?.locations ?? []).filter((l) => !l.is_shared).map((l) => {
                   const isDirect = ((l as { stock_mode?: string | null }).stock_mode ?? "traditional") === "direct";
                   return (
                     <Button
