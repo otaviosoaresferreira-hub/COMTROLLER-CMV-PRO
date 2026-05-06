@@ -44,7 +44,7 @@ function InventarioHubContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("locations")
-        .select("id,name,operation_type,parent_id,location_type,stock_mode")
+        .select("id,name,operation_type,parent_id,location_type,stock_mode,is_shared")
         .order("name");
       if (error) throw error;
       return (data ?? []) as LocationNode[];
