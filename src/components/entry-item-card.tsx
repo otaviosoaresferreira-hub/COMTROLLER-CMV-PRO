@@ -1064,7 +1064,7 @@ function FormulaInput({
           className={cn(
             "pr-9 tabular-nums",
             readOnly && "bg-muted/50",
-            highlight && "border-primary/50 bg-primary/5 font-semibold",
+            highlight && "border-primary/50 bg-primary/20 font-semibold",
           )}
         />
         {suffix && (

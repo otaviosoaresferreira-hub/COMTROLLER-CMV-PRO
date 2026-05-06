@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Building2, Image as ImageIcon, Palette, ShieldCheck, Upload, Trash2, RotateCcw } from "lucide-react";
+import { Building2, Image as ImageIcon, Palette, ShieldCheck, Upload, Trash2, Sun, SunMoon, Moon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
-import { useBranding, DEFAULT_PRIMARY, DEFAULT_BACKGROUND } from "@/lib/branding";
+import { useBranding, type ThemeMode } from "@/lib/branding";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -170,49 +170,45 @@ function ConfiguracoesPage() {
         </CardContent>
       </Card>
 
-      {/* Personalização de Cores */}
+      {/* Tema do Sistema */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Palette className="h-4 w-4" /> Personalização de Cores
+            <Palette className="h-4 w-4" /> Tema do Sistema
           </CardTitle>
           <CardDescription>
-            Escolha cores personalizadas. O contraste do texto é ajustado automaticamente para garantir legibilidade.
+            Escolha um dos três modos de tema. A cor primária da marca (laranja) é fixa.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <ColorPickerRow
-            label="Cor Primária"
-            description="Botões, ícones ativos e destaques."
-            value={branding.primaryColor}
-            onChange={(hex) => branding.update({ primaryColor: hex })}
-          />
-
-          <Separator />
-
-          <ColorPickerRow
-            label="Cor de Fundo"
-            description="Fundo das telas. Tons escuros ativam o modo escuro automaticamente."
-            value={branding.backgroundColor}
-            onChange={(hex) => branding.update({ backgroundColor: hex })}
-          />
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              Voltar para o tema padrão (fundo branco com primária verde).
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                branding.update({ primaryColor: DEFAULT_PRIMARY, backgroundColor: DEFAULT_BACKGROUND });
-                toast.success("Tema padrão restaurado");
-              }}
-            >
-              <RotateCcw className="mr-2 h-4 w-4" /> Redefinir para Padrão
-            </Button>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <ThemeModeOption
+              mode="light"
+              current={branding.themeMode}
+              onSelect={(m) => branding.update({ themeMode: m })}
+              icon={<Sun className="h-5 w-5" />}
+              label="Claro"
+              swatch="#F5F5F5"
+              swatchFg="#111111"
+            />
+            <ThemeModeOption
+              mode="medium"
+              current={branding.themeMode}
+              onSelect={(m) => branding.update({ themeMode: m })}
+              icon={<SunMoon className="h-5 w-5" />}
+              label="Médio"
+              swatch="#292E2B"
+              swatchFg="#F5F5F5"
+            />
+            <ThemeModeOption
+              mode="dark"
+              current={branding.themeMode}
+              onSelect={(m) => branding.update({ themeMode: m })}
+              icon={<Moon className="h-5 w-5" />}
+              label="Escuro"
+              swatch="#111111"
+              swatchFg="#F5F5F5"
+            />
           </div>
         </CardContent>
       </Card>
@@ -252,48 +248,45 @@ function ConfiguracoesPage() {
   );
 }
 
-interface ColorPickerRowProps {
+interface ThemeModeOptionProps {
+  mode: ThemeMode;
+  current: ThemeMode;
+  onSelect: (m: ThemeMode) => void;
+  icon: ReactNode;
   label: string;
-  description?: string;
-  value: string;
-  onChange: (hex: string) => void;
+  swatch: string;
+  swatchFg: string;
 }
 
-function ColorPickerRow({ label, description, value, onChange }: ColorPickerRowProps) {
-  const safe = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000";
+function ThemeModeOption({ mode, current, onSelect, icon, label, swatch, swatchFg }: ThemeModeOptionProps) {
+  const active = current === mode;
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="min-w-0 flex-1">
-        <Label className="text-sm font-medium">{label}</Label>
-        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
-      </div>
-      <div className="flex items-center gap-2">
-        <Input
-          value={value}
-          onChange={(e) => {
-            const v = e.target.value.trim();
-            onChange(v.startsWith("#") ? v : `#${v}`);
-          }}
-          className="h-9 w-28 font-mono text-xs uppercase"
-          maxLength={7}
-          placeholder="#000000"
+    <button
+      type="button"
+      onClick={() => onSelect(mode)}
+      className={cn(
+        "group flex flex-col items-stretch gap-3 rounded-lg border p-3 text-left transition",
+        active
+          ? "border-primary ring-2 ring-primary/40"
+          : "border-border hover:border-primary/50",
+      )}
+    >
+      <div
+        className="flex h-16 items-center justify-between rounded-md px-3"
+        style={{ background: swatch, color: swatchFg }}
+      >
+        <span className="flex items-center gap-2 text-sm font-medium">{icon}{label}</span>
+        <span
+          className="h-6 w-6 rounded-full border border-black/10"
+          style={{ background: "#F96A0B" }}
+          aria-hidden
         />
-        <label
-          className={cn(
-            "relative inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border shadow-sm ring-offset-background transition hover:ring-2 hover:ring-primary/40",
-          )}
-          style={{ background: safe }}
-          title="Escolher cor"
-        >
-          <input
-            type="color"
-            value={safe}
-            onChange={(e) => onChange(e.target.value)}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-          />
-        </label>
       </div>
-    </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{active ? "Selecionado" : "Selecionar"}</span>
+        <span className="font-mono text-[10px] uppercase text-muted-foreground">{swatch}</span>
+      </div>
+    </button>
   );
 }
 

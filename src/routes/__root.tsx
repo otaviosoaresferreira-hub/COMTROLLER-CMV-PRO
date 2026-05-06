@@ -14,7 +14,7 @@ import { ManagerModeProvider } from "@/lib/manager-mode";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ManagerModeToggle } from "@/components/manager-mode-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
+
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { BrandingProvider, useBranding, DEFAULT_LOGO_URL } from "@/lib/branding";
 import appCss from "../styles.css?url";
@@ -133,7 +133,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <div className="flex min-w-0 flex-1 rounded-none flex-col">
-          <header className="sticky top-0 z-30 flex h-24 items-center justify-between gap-2 border-b border-border bg-background/85 px-3 backdrop-blur bg-[#c2c2c2]">
+          <header className="sticky top-0 z-30 flex h-24 items-center justify-between gap-2 border-b border-border bg-background/85 px-3 backdrop-blur">
             <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger />
               <CompanyHeaderBrand />
@@ -158,7 +158,7 @@ function RootComponent() {
               <Outlet />
             </AuthGate>
             <Toaster position="top-center" richColors />
-            <ThemeToggle />
+            
           </ManagerModeProvider>
         </BrandingProvider>
       </AuthProvider>

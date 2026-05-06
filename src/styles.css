@@ -66,11 +66,11 @@
 
 :root {
   --radius: 0.875rem;
-  --background: oklch(0.985 0.005 240);
-  --foreground: oklch(0.18 0.03 250);
-  --brand: oklch(0.55 0.16 155);
-  --brand-foreground: oklch(0.99 0 0);
-  --brand-soft: oklch(0.95 0.04 155);
+  --background: #F5F5F5;
+  --foreground: #111111;
+  --brand: #F96A0B;
+  --brand-foreground: #ffffff;
+  --brand-soft: #FDE3D0;
   --warning: oklch(0.78 0.15 75);
   --warning-foreground: oklch(0.25 0.06 75);
   --success: oklch(0.65 0.15 155);
@@ -78,19 +78,20 @@
   --card-foreground: oklch(0.18 0.03 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.03 250);
-  --primary: oklch(0.55 0.16 155);
-  --primary-foreground: oklch(0.99 0 0);
+  --primary: #F96A0B;
+  --primary-foreground: #ffffff;
+  --primary-hover: #C4520A;
   --secondary: oklch(0.96 0.01 240);
   --secondary-foreground: oklch(0.22 0.03 250);
   --muted: oklch(0.96 0.01 240);
   --muted-foreground: oklch(0.38 0.02 250);
-  --accent: oklch(0.95 0.04 155);
-  --accent-foreground: oklch(0.3 0.1 155);
+  --accent: #FDE3D0;
+  --accent-foreground: #C4520A;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: #E2E2E2;
+  --input: #E2E2E2;
+  --ring: #F96A0B;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -107,41 +108,42 @@
 }
 
 .dark {
-  /* Premium Dark & Emerald — preto profundo, grafite e verde esmeralda */
-  --background: oklch(0.06 0 0);
-  --foreground: oklch(0.96 0 0);
-  --brand: oklch(0.66 0.17 155);
-  --brand-foreground: oklch(0.06 0 0);
-  --brand-soft: oklch(0.22 0.05 155);
+  /* Brand Dark — preto profundo + laranja oficial */
+  --background: #111111;
+  --foreground: #F5F5F5;
+  --brand: #F96A0B;
+  --brand-foreground: #ffffff;
+  --brand-soft: #3A2516;
   --warning: oklch(0.78 0.15 75);
   --warning-foreground: oklch(0.15 0.04 75);
   --success: oklch(0.7 0.17 155);
-  --card: oklch(0.16 0 0);
-  --card-foreground: oklch(0.96 0 0);
-  --popover: oklch(0.16 0 0);
-  --popover-foreground: oklch(0.96 0 0);
-  --primary: oklch(0.66 0.17 155);
-  --primary-foreground: oklch(0.06 0 0);
-  --secondary: oklch(0.2 0 0);
-  --secondary-foreground: oklch(0.96 0 0);
-  --muted: oklch(0.2 0 0);
-  --muted-foreground: oklch(0.82 0 0);
-  --accent: oklch(0.22 0.05 155);
-  --accent-foreground: oklch(0.92 0.05 155);
+  --card: #1A1A1A;
+  --card-foreground: #F5F5F5;
+  --popover: #1A1A1A;
+  --popover-foreground: #F5F5F5;
+  --primary: #F96A0B;
+  --primary-foreground: #ffffff;
+  --primary-hover: #C4520A;
+  --secondary: #1F1F1F;
+  --secondary-foreground: #F5F5F5;
+  --muted: #1F1F1F;
+  --muted-foreground: #C9C9C9;
+  --accent: #3A2516;
+  --accent-foreground: #F96A0B;
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.28 0 0);
-  --input: oklch(0.28 0 0);
-  --ring: oklch(0.66 0.17 155);
-  --chart-1: oklch(0.7 0.17 155);
-  --chart-2: oklch(0.6 0.14 160);
+  --border: #2A2A2A;
+  --input: #2A2A2A;
+  --ring: #F96A0B;
+  --chart-1: #F96A0B;
+  --chart-2: oklch(0.7 0.17 155);
   --chart-3: oklch(0.78 0.15 75);
   --chart-4: oklch(0.65 0.22 25);
   --chart-5: oklch(0.5 0 0);
-  --sidebar: oklch(0.09 0 0);
-  --sidebar-foreground: oklch(0.96 0 0);
-  --sidebar-primary: oklch(0.66 0.17 155);
-  --sidebar-primary-foreground: oklch(0.06 0 0);
+  --sidebar: #161616;
+  --sidebar-foreground: #F5F5F5;
+  --sidebar-primary: #F96A0B;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: oklch(0.18 0 0);
   --sidebar-accent-foreground: oklch(0.96 0 0);
   --sidebar-border: oklch(0.24 0 0);
@@ -180,4 +182,11 @@
     color: color-mix(in oklab, var(--foreground) 78%, transparent);
     font-weight: 500;
   }
+
+  /* Hover/pressed oficial em qualquer botão de primária — laranja escurecido. */
+  .bg-primary:hover,
+  .bg-primary:active {
+    background-color: var(--primary-hover) !important;
+  }
+}
 }

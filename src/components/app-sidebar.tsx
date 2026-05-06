@@ -169,10 +169,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border px-2 pt-0 pb-2">
+      <SidebarHeader className="border-b border-sidebar-border px-2 pt-2 pb-2">
         {collapsed ? (
           <div className="flex items-center justify-center">
-            {/* Estado recolhido: ícone simplificado da seta de gráfico ascendente */}
             <TrendingUp
               className="h-7 w-7 text-primary"
               strokeWidth={2.5}
@@ -180,25 +179,20 @@ export function AppSidebar() {
             />
           </div>
         ) : (
-          // Branding quebrado em dois containers distintos: imagem e texto, colados.
-          <>
-            <div className="flex items-start p-0 m-0 -mx-2">
-              <img
-                src={logoSrc}
-                alt="Controller CMV Pro"
-                className="block h-64 w-full object-contain p-0 m-0 -mt-8 opacity-70 bg-[#575757] text-black/[0.38] mx-0 my-[31px]"
-              />
-            </div>
-            <div className="flex flex-col items-start p-0 m-0 -mt-20">
-              <p className="text-left text-sm font-semibold leading-none p-0 m-0">
-                Controller CMV Pro
-              </p>
-              <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground p-0 m-0 mt-1">
-                {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
-                {isManager ? "Modo Gestor" : "Operacional"}
-              </p>
-            </div>
-          </>
+          <div className="flex flex-col items-center gap-1">
+            <img
+              src={logoSrc}
+              alt="Controller CMV Pro"
+              className="block h-28 w-auto max-w-full object-contain"
+            />
+            <p className="text-center text-sm font-semibold leading-none">
+              Controller CMV Pro
+            </p>
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground">
+              {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
+              {isManager ? "Modo Gestor" : "Operacional"}
+            </p>
+          </div>
         )}
       </SidebarHeader>
 
