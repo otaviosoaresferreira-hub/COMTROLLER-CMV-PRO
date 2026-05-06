@@ -57,6 +57,7 @@ import { toast } from "sonner";
 import {
   getBreadcrumb,
   LOCATION_TYPE_META,
+  SHARED_LOCATION_META,
   type LocationType,
   type LocationNode,
 } from "@/lib/location-hierarchy";
@@ -119,7 +120,7 @@ function LocalPage() {
           .eq("is_free", false),
         supabase
           .from("locations")
-          .select("id,name,stock_mode,location_type,parent_id,operation_type")
+          .select("id,name,stock_mode,location_type,parent_id,operation_type,is_shared")
           .eq("id", locationId)
           .single(),
         supabase
@@ -175,6 +176,7 @@ function LocalPage() {
   const orgId = useOrgId();
 
   const isCentral = data?.location?.name.toLowerCase().includes("central");
+  const isShared = !!(data?.location as { is_shared?: boolean | null } | undefined)?.is_shared;
 
   // Monta todas as linhas (na praça atual) com displayQuantity igual ao Estoque Central
   const allRows: ItemRow[] = useMemo(() => {
@@ -478,16 +480,33 @@ function LocalPage() {
           </section>
         )}
 
-        <section className="grid grid-cols-2 gap-3">
+        <section className={isShared ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 gap-3"}>
           <Button variant="default" className="h-12 gap-2" onClick={() => setCountOpen(true)}>
             <ClipboardCheck className="h-4 w-4" /> Auditoria de turno
           </Button>
-          <ProductionDialog
-            defaultLocationId={locationId}
-            triggerVariant="outline"
-            triggerClassName="h-12 w-full"
-          />
+          {!isShared && (
+            <ProductionDialog
+              defaultLocationId={locationId}
+              triggerVariant="outline"
+              triggerClassName="h-12 w-full"
+            />
+          )}
         </section>
+
+        {isShared && (
+          <section className={`flex items-start gap-3 rounded-2xl border p-4 ${SHARED_LOCATION_META.tone}`}>
+            <SHARED_LOCATION_META.icon className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="font-semibold">{SHARED_LOCATION_META.label}</p>
+              <p className="text-xs opacity-90">
+                Local compartilhado entre operações da unidade. Saídas manuais
+                (descarte, alimentação, transferência saindo) ficam bloqueadas — o
+                consumo acontece automaticamente via produção. Contagem de inventário
+                não é obrigatória.
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Transferência em lote — abre modal com TODOS os itens para digitar quantidades */}
         <section className="flex flex-wrap items-center gap-2">
@@ -507,7 +526,7 @@ function LocalPage() {
                 Cancelar seleção
               </Button>
             </>
-          ) : (
+          ) : isShared ? null : (
             <>
               <Button
                 size="sm"
@@ -705,19 +724,21 @@ function LocalPage() {
                                   >
                                     <SlidersHorizontal className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9 gap-1.5"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setTransferItem(r);
-                                    }}
-                                    disabled={r.displayQuantity <= 0}
-                                  >
-                                    <ArrowLeftRight className="h-3.5 w-3.5" />
-                                    Transferir
-                                  </Button>
+                                  {!isShared && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-9 gap-1.5"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTransferItem(r);
+                                      }}
+                                      disabled={r.displayQuantity <= 0}
+                                    >
+                                      <ArrowLeftRight className="h-3.5 w-3.5" />
+                                      Transferir
+                                    </Button>
+                                  )}
                                 </div>
                               )}
                             </li>
