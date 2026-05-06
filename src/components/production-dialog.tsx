@@ -77,7 +77,7 @@ type ItemRow = {
   standard_weight_g?: number;
   avg_weight_g?: number;
 };
-type LocationRow = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null };
+type LocationRow = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null; parent_id?: string | null; location_type?: string | null };
 type StockRow = { item_id: string; location_id: string; current_stock: number };
 type RecipeRow = {
   id: string;
