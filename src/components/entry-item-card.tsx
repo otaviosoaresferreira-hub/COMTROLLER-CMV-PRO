@@ -707,41 +707,41 @@ export function EntryItemCard({
 
       {/* MOTOR DE CÁLCULOS */}
       <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
-        <div className="mb-2 flex items-center gap-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Cálculo de entrada
-          </p>
-          <HelpTip text="Calculadora Inteligente: Altere qualquer campo para que o sistema ajuste os outros automaticamente." />
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Cálculo de entrada
+            </p>
+            <HelpTip text="Calculadora Inteligente: preencha 2 campos e o sistema calcula o terceiro automaticamente (A × B = C)." />
+          </div>
+          {t.sharedActive && (
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <span className="text-[10px] font-medium text-muted-foreground">
+                Calcular por Caixa/Fardo
+              </span>
+              <Switch
+                checked={!!data.wholesaleMode}
+                onCheckedChange={(v) => {
+                  const next: Partial<EntryCardData> = { wholesaleMode: v };
+                  if (!v) {
+                    next.packBoxes = "";
+                    next.packFactor = "";
+                  }
+                  onChange(next);
+                }}
+              />
+            </label>
+          )}
         </div>
 
         {t.sharedActive ? (
           <>
-            {/* Toggle Caixa/Fardo */}
-            <div className="mb-2 flex items-center justify-end">
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  Calcular por Caixa/Fardo
-                </span>
-                <Switch
-                  checked={!!data.wholesaleMode}
-                  onCheckedChange={(v) => {
-                    const next: Partial<EntryCardData> = { wholesaleMode: v };
-                    if (!v) {
-                      next.packBoxes = "";
-                      next.packFactor = "";
-                    }
-                    onChange(next);
-                  }}
-                />
-              </label>
-            </div>
-
             {/* Linha horizontal única de cálculo */}
             <div
               className={cn(
                 "grid items-end gap-2",
                 data.wholesaleMode
-                  ? "grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr]"
+                  ? "grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr]"
                   : "grid-cols-[1fr_auto_1fr_auto_1fr]",
               )}
             >
@@ -755,10 +755,10 @@ export function EntryItemCard({
                       const b = parseDec(v);
                       const f = parseDec(data.packFactor ?? "");
                       if (b > 0 && f > 0) {
-                        Object.assign(
-                          next,
-                          applyBidirectional(data, "units", String(Math.max(0, Math.round(b * f)))),
-                        );
+                        const u = String(Math.max(0, Math.round(b * f)));
+                        next.sharedUnits = u;
+                        touchCalcField("units");
+                        recomputeCalc(next);
                       }
                       onChange(next);
                     }}
@@ -775,10 +775,10 @@ export function EntryItemCard({
                       const b = parseDec(data.packBoxes ?? "");
                       const f = parseDec(v);
                       if (b > 0 && f > 0) {
-                        Object.assign(
-                          next,
-                          applyBidirectional(data, "units", String(Math.max(0, Math.round(b * f)))),
-                        );
+                        const u = String(Math.max(0, Math.round(b * f)));
+                        next.sharedUnits = u;
+                        touchCalcField("units");
+                        recomputeCalc(next);
                       }
                       onChange(next);
                     }}
@@ -794,38 +794,39 @@ export function EntryItemCard({
                 value={data.sharedUnits}
                 onChange={(v) => {
                   const cleaned = v.replace(/[^\d]/g, "");
-                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                  handleCalcChange("units", cleaned);
                   if (data.wholesaleMode) {
                     const f = parseDec(data.packFactor ?? "");
                     const u = parseDec(cleaned);
                     if (f > 0 && u > 0) {
-                      patch.packBoxes = String(Math.max(0, Math.round(u / f)));
+                      onChange({ packBoxes: String(Math.max(0, Math.round(u / f))) });
                     }
                   }
-                  onChange(patch);
                 }}
                 step="1"
                 inputMode="numeric"
                 suffix="un"
+                highlight={computedField === "units"}
               />
               <Op>×</Op>
               <FormulaInput
                 label={`${noun} do Lote (${baseSharedLow}/un)`}
                 value={data.lotWeightKg}
-                onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
+                onChange={(v) => handleCalcChange("lot", v)}
                 step="0.001"
                 suffix={baseSharedLow}
                 displayDecimals={3}
+                highlight={computedField === "lot"}
               />
               <Op>=</Op>
               <FormulaInput
                 label={`${noun} Total`}
                 value={data.sharedTotalKg}
-                onChange={(v) => onChange(applyBidirectional(data, "total", v))}
+                onChange={(v) => handleCalcChange("total", v)}
                 step="0.001"
                 suffix={baseSharedLow}
-                highlight
                 displayDecimals={3}
+                highlight={computedField === "total"}
               />
             </div>
             {/* Conversão bidirecional KG↔L do total */}
