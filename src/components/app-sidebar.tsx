@@ -194,10 +194,10 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
-        <SidebarGroup className="pt-0 mt-0 pb-0">
+      <SidebarContent className="gap-0 justify-start">
+        <SidebarGroup className="p-0 pt-0 mt-0 mb-0">
           <SidebarGroupLabel>Operação</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="p-0 m-0">
             <SidebarMenu>
               {operationalItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
