@@ -169,7 +169,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-0 m-0">
+      <SidebarHeader className="border-b border-sidebar-border p-0 m-0 gap-0">
         {collapsed ? (
           <div className="flex items-center justify-center py-2">
             <TrendingUp
@@ -179,14 +179,14 @@ export function AppSidebar() {
             />
           </div>
         ) : (
-          <div className="flex flex-col items-stretch w-full p-0 m-0 gap-0">
+          <div className="flex flex-col items-stretch justify-start w-full p-0 m-0 gap-0">
             <img
               src={logoSrc}
               alt="Controller CMV Pro"
               className="block"
-              style={{ width: "100%", height: "auto", maxWidth: "none", padding: 0, margin: 0, display: "block" }}
+              style={{ width: "100%", height: "auto", maxWidth: "none", padding: 0, margin: 0, marginTop: 0, marginBottom: 0, display: "block" }}
             />
-            <p className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground pb-1 m-0">
+            <p className="flex items-center justify-center text-[10px] uppercase tracking-wide leading-none text-muted-foreground p-0 m-0">
               {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
               {isManager ? "Modo Gestor" : "Operacional"}
             </p>
@@ -194,8 +194,8 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup className="pt-0 mt-0">
+      <SidebarContent className="gap-0">
+        <SidebarGroup className="pt-0 mt-0 pb-0">
           <SidebarGroupLabel>Operação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
