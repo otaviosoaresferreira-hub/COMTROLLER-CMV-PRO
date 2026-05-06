@@ -1260,6 +1260,13 @@ export function ProductionDialog({
         stockByItem: stockByItemForExplode,
       };
 
+      const consumeLocId = consumeFromShared && sharedLocationForDest
+        ? sharedLocationForDest.id
+        : central.id;
+      const consumeLocLabel = consumeFromShared && sharedLocationForDest
+        ? ` [Uso Comum @ ${sharedLocationForDest.name}]`
+        : "";
+
       const debitOne = async (
         itemId: string,
         baseQty: number,
@@ -1278,24 +1285,24 @@ export function ProductionDialog({
           });
           if (r.realBaseTaken > 0) realTaken = r.realBaseTaken;
         } catch (_e) { /* não bloqueia produção */ }
-        const k = stockKey(itemId, central.id);
+        const k = stockKey(itemId, consumeLocId);
         const cur = stockMap.get(k) ?? 0;
         const newQty = cur - realTaken;
         stockMap.set(k, newQty);
         const { error } = await supabase
           .from("stock_levels")
           .upsert(
-            { item_id: itemId, location_id: central.id, current_stock: newQty },
+            { item_id: itemId, location_id: consumeLocId, current_stock: newQty },
             { onConflict: "item_id,location_id" },
           );
         if (error) throw error;
         const { error: mErr } = await supabase.from("movements").insert({
           item_id: itemId,
-          from_location_id: central.id,
+          from_location_id: consumeLocId,
           to_location_id: null,
           quantity: realTaken,
           type: "production_out",
-          note: `Produção: ${effectiveRecipeName}${noteSuffix}${isEditMode ? " [EDITADO]" : ""}`,
+          note: `Produção: ${effectiveRecipeName}${noteSuffix}${consumeLocLabel}${isEditMode ? " [EDITADO]" : ""}`,
         });
         if (mErr) throw mErr;
       };
