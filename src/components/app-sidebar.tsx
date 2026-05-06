@@ -169,9 +169,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border px-2 pt-2 pb-2">
+      <SidebarHeader className="border-b border-sidebar-border p-0">
         {collapsed ? (
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center py-2">
             <TrendingUp
               className="h-7 w-7 text-primary"
               strokeWidth={2.5}
@@ -183,12 +183,10 @@ export function AppSidebar() {
             <img
               src={logoSrc}
               alt="Controller CMV Pro"
-              className="block h-28 w-auto max-w-full object-contain"
+              className="block"
+              style={{ width: "100%", height: "auto" }}
             />
-            <p className="text-center text-sm font-semibold leading-none">
-              Controller CMV Pro
-            </p>
-            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground">
+            <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide leading-none text-muted-foreground pb-2">
               {isManager ? <ShieldCheck className="h-3 w-3" /> : <ChartNoAxesCombined className="h-3 w-3" />}
               {isManager ? "Modo Gestor" : "Operacional"}
             </p>
