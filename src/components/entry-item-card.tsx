@@ -331,6 +331,7 @@ export function EntryItemCard({
   const baseSharedLow = baseShared.toLowerCase();
   const altShared: "KG" | "L" = baseShared === "KG" ? "L" : "KG";
   const altSharedLow = altShared.toLowerCase();
+  const noun = baseShared === "L" ? "Volume" : "Peso";
   const packLabel = t.sharedActive
     ? `${baseSharedLow}/un`
     : t.effectiveUnit === "KG"
