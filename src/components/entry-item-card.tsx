@@ -1009,3 +1009,104 @@ function HelpTip({ text }: { text: string }) {
     </Tooltip>
   );
 }
+
+function BoxMultiplier({
+  boxes,
+  factor,
+  units,
+  onChange,
+}: {
+  boxes: string;
+  factor: string;
+  units: string;
+  onChange: (patch: { boxes?: string; factor?: string }) => void;
+}) {
+  const b = parseDec(boxes);
+  const f = parseDec(factor);
+  const computed = b > 0 && f > 0 ? Math.round(b * f) : 0;
+  return (
+    <div className="mb-2 flex items-end gap-2 rounded-md border border-dashed border-border bg-background/40 p-2">
+      <div className="flex-1 space-y-1">
+        <div className="flex items-center gap-1">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Caixas
+          </Label>
+          <HelpTip text="Multiplique caixas pelo Fator de Embalagem para preencher Qtd. Unidades automaticamente. Ex.: 5 caixas × 12 = 60 un." />
+        </div>
+        <Input
+          type="number"
+          inputMode="decimal"
+          step="0.001"
+          min="0"
+          placeholder="0"
+          value={boxes}
+          onChange={(e) => onChange({ boxes: e.target.value })}
+          className="h-9 tabular-nums"
+        />
+      </div>
+      <div className="pb-2 text-base font-semibold text-muted-foreground">×</div>
+      <div className="flex-1 space-y-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          Fator de Embalagem
+        </Label>
+        <Input
+          type="number"
+          inputMode="numeric"
+          step="1"
+          min="0"
+          placeholder="un/caixa"
+          value={factor}
+          onChange={(e) => onChange({ factor: e.target.value })}
+          className="h-9 tabular-nums"
+        />
+      </div>
+      <div className="pb-2 text-base font-semibold text-muted-foreground">=</div>
+      <div className="flex-1 space-y-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          → Qtd. Unidades
+        </Label>
+        <div className="flex h-9 items-center justify-end rounded-md border border-input bg-muted/30 px-3 text-sm font-semibold tabular-nums text-muted-foreground">
+          {computed > 0 ? `${computed} un` : (parseDec(units) > 0 ? `${parseDec(units)} un` : "—")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CostCard({
+  label,
+  value,
+  tone = "primary",
+}: {
+  label: string;
+  value: string;
+  tone?: "primary" | "alt";
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border-2 px-3 py-2",
+        tone === "primary"
+          ? "border-primary/60 bg-primary/10"
+          : "border-emerald-500/50 bg-emerald-500/10",
+      )}
+    >
+      <div
+        className={cn(
+          "text-[10px] font-semibold uppercase tracking-wide",
+          tone === "primary" ? "text-primary/80" : "text-emerald-700 dark:text-emerald-400",
+        )}
+      >
+        {label}
+      </div>
+      <div
+        className={cn(
+          "text-lg font-bold tabular-nums leading-tight",
+          tone === "primary" ? "text-primary" : "text-emerald-700 dark:text-emerald-400",
+        )}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
