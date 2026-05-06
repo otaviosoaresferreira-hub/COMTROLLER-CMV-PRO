@@ -724,21 +724,21 @@ function LocalPage() {
                                   >
                                     <SlidersHorizontal className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9 gap-1.5"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setTransferItem(r);
-                                    }}
-                                    disabled={r.displayQuantity <= 0}
-                                  >
-                                    <ArrowLeftRight className="h-3.5 w-3.5" />
-                                    Transferir
-                                  </Button>
-                                </div>
-                              )}
+                                  {!isShared && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-9 gap-1.5"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTransferItem(r);
+                                      }}
+                                      disabled={r.displayQuantity <= 0}
+                                    >
+                                      <ArrowLeftRight className="h-3.5 w-3.5" />
+                                      Transferir
+                                    </Button>
+                                  )}
                             </li>
                           );
                         })}
