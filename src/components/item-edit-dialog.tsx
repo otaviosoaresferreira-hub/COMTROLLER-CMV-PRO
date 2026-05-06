@@ -541,21 +541,23 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Unidade Principal</Label>
-                <Select value={unit} onValueChange={setUnit}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(sharedEnabled ? SHARED_UNIT_OPTIONS : UNIT_OPTIONS).map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {u}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!sharedEnabled && (
+                <div className="space-y-2">
+                  <Label>Unidade Principal</Label>
+                  <Select value={unit} onValueChange={setUnit}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNIT_OPTIONS.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {u}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <CategorySubcategorySelect
                 value={categoryId === "none" ? "" : categoryId}
                 onChange={(v) => setCategoryId(v || "none")}
