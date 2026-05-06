@@ -458,8 +458,13 @@ export function TransferDialog({
 
         const newFromQty = Number(fromLevel?.current_stock ?? 0) - realTaken;
         // Destino recebe a mesma proporção (aplica fator de rendimento sobre o real)
+        // Uso Comum: saldo é SUBSTITUÍDO pela nova entrada (não somado).
+        // Sobras anteriores (sal, óleo, condimentos) são irrisórias e
+        // impossíveis de medir com precisão — a nova transferência assume o controle.
         const expectedReceiveQty = realTaken * factor;
-        const newToQty = Number(toLevel?.current_stock ?? 0) + expectedReceiveQty;
+        const newToQty = toIsShared
+          ? expectedReceiveQty
+          : Number(toLevel?.current_stock ?? 0) + expectedReceiveQty;
 
         const { error: e1 } = await supabase
           .from("stock_levels")
