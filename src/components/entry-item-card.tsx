@@ -327,14 +327,18 @@ export function EntryItemCard({
   }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
+  const baseShared = (data.sharedBaseUnit ?? "KG") as "KG" | "L";
+  const baseSharedLow = baseShared.toLowerCase();
+  const altShared: "KG" | "L" = baseShared === "KG" ? "L" : "KG";
+  const altSharedLow = altShared.toLowerCase();
   const packLabel = t.sharedActive
-    ? "kg/un"
+    ? `${baseSharedLow}/un`
     : t.effectiveUnit === "KG"
       ? "kg/emb"
       : t.effectiveUnit === "L"
         ? "L/emb"
         : "un/emb";
-  const totalLabel = t.sharedActive ? "kg" : t.effectiveUnit;
+  const totalLabel = t.sharedActive ? baseSharedLow : t.effectiveUnit;
 
   return (
     <TooltipProvider delayDuration={150}>
