@@ -88,6 +88,8 @@ export type EntryCardData = {
   packBoxes?: string;
   /** Unidades por caixa. */
   packFactor?: string;
+  /** Modo Atacado: ativa a expressão "Volume × Fator = Qtd". */
+  wholesaleMode?: boolean;
 
   // Lote — Unidade Compartilhada
   sharedUnits: string;
