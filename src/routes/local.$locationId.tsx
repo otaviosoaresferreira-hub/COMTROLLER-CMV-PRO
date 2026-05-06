@@ -175,6 +175,7 @@ function LocalPage() {
   const orgId = useOrgId();
 
   const isCentral = data?.location?.name.toLowerCase().includes("central");
+  const isShared = !!(data?.location as { is_shared?: boolean | null } | undefined)?.is_shared;
 
   // Monta todas as linhas (na praça atual) com displayQuantity igual ao Estoque Central
   const allRows: ItemRow[] = useMemo(() => {
