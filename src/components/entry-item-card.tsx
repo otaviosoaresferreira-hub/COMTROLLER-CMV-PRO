@@ -88,6 +88,8 @@ export type EntryCardData = {
   packBoxes?: string;
   /** Unidades por caixa. */
   packFactor?: string;
+  /** Modo Atacado: ativa a expressão "Volume × Fator = Qtd". */
+  wholesaleMode?: boolean;
 
   // Lote — Unidade Compartilhada
   sharedUnits: string;
@@ -149,6 +151,7 @@ export function makeBlankEntryCard(): EntryCardData {
     totalValue: "",
     packBoxes: "",
     packFactor: "",
+    wholesaleMode: false,
     sharedUnits: "",
     sharedTotalKg: "",
     lotWeightKg: "",
@@ -447,24 +450,25 @@ export function EntryItemCard({
         </div>
       ) : (
         <div className="space-y-3">
-          {/* L1: Nome + Unidade */}
-          <div className="grid grid-cols-[1fr_88px] gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Nome do insumo *</Label>
+          {/* L1: Nome + Unidade + Categoria + Subcategoria (linha única) */}
+          <div className="grid grid-cols-12 gap-2">
+            <div className="col-span-12 sm:col-span-4 space-y-1">
+              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Nome do insumo *</Label>
               <Input
                 value={data.newName}
                 onChange={(e) => onChange({ newName: e.target.value })}
                 placeholder="Ex.: Tomate italiano"
+                className="h-9"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Unidade</Label>
+            <div className="col-span-4 sm:col-span-2 space-y-1">
+              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Unidade</Label>
               <Select
                 value={data.newUnit}
                 onValueChange={(v) => onChange({ newUnit: v as EntryUnit })}
                 disabled={data.newSharedEnabled}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -476,13 +480,14 @@ export function EntryItemCard({
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-8 sm:col-span-6">
+              <CategorySubcategorySelect
+                value={data.newCategoryId}
+                onChange={(v) => onChange({ newCategoryId: v })}
+                size="sm"
+              />
+            </div>
           </div>
-
-          {/* L2: Categoria/Subcategoria */}
-          <CategorySubcategorySelect
-            value={data.newCategoryId}
-            onChange={(v) => onChange({ newCategoryId: v })}
-          />
 
           {/* L3: switches lado a lado */}
           <div className="grid grid-cols-2 gap-2">
@@ -655,58 +660,67 @@ export function EntryItemCard({
 
         {t.sharedActive ? (
           <>
-            {/* Multiplicador de embalagem (Caixas × Fator → Qtd. Unidades) */}
-            <BoxMultiplier
+            {/* Quantidade de Unidades + Toggle Modo Atacado */}
+            <WholesaleQty
               boxes={data.packBoxes ?? ""}
               factor={data.packFactor ?? ""}
               units={data.sharedUnits}
-              onChange={(patch) => {
-                const boxes = patch.boxes !== undefined ? patch.boxes : (data.packBoxes ?? "");
-                const factor =
-                  patch.factor !== undefined ? patch.factor : (data.packFactor ?? "");
-                const next: Partial<EntryCardData> = {
-                  packBoxes: boxes,
-                  packFactor: factor,
-                };
-                const b = parseDec(boxes);
-                const f = parseDec(factor);
-                if (b > 0 && f > 0) {
-                  const newUnits = String(Math.round(b * f));
-                  Object.assign(next, applyBidirectional(data, "units", newUnits));
+              wholesale={!!data.wholesaleMode}
+              onToggle={(v) => {
+                const next: Partial<EntryCardData> = { wholesaleMode: v };
+                if (!v) {
+                  next.packBoxes = "";
+                  next.packFactor = "";
                 }
                 onChange(next);
               }}
+              onChangeBoxes={(boxes) => {
+                const factor = data.packFactor ?? "";
+                const next: Partial<EntryCardData> = { packBoxes: boxes };
+                const b = parseDec(boxes);
+                const f = parseDec(factor);
+                if (b > 0 && f > 0) {
+                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                }
+                onChange(next);
+              }}
+              onChangeFactor={(factor) => {
+                const boxes = data.packBoxes ?? "";
+                const next: Partial<EntryCardData> = { packFactor: factor };
+                const b = parseDec(boxes);
+                const f = parseDec(factor);
+                if (b > 0 && f > 0) {
+                  Object.assign(next, applyBidirectional(data, "units", String(Math.round(b * f))));
+                }
+                onChange(next);
+              }}
+              onChangeUnits={(v) => {
+                const cleaned = v.replace(/[^\d]/g, "");
+                const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                const f = parseDec(data.packFactor ?? "");
+                const u = parseDec(cleaned);
+                if (f > 0 && u > 0) {
+                  patch.packBoxes = (u / f).toLocaleString("en-US", {
+                    maximumFractionDigits: 3,
+                    useGrouping: false,
+                  });
+                }
+                onChange(patch);
+              }}
             />
-            <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
+            <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-end gap-2">
               <FormulaInput
-                label="Qtd. Unidades"
-                value={data.sharedUnits}
-                onChange={(v) => {
-                  const cleaned = v.replace(/[^\d]/g, "");
-                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
-                  // Bidirecional com Fator de Embalagem: recalcula Caixas se Fator preenchido.
-                  const f = parseDec(data.packFactor ?? "");
-                  const u = parseDec(cleaned);
-                  if (f > 0 && u > 0) {
-                    patch.packBoxes = (u / f).toLocaleString("en-US", {
-                      maximumFractionDigits: 3,
-                      useGrouping: false,
-                    });
-                  }
-                  onChange(patch);
-                }}
-                step="1"
-                inputMode="numeric"
-                suffix="un"
-              />
-              <Op>×</Op>
-              <FormulaInput
-                label={`${noun} do Lote Atual (${packLabel})`}
+                label={`${noun} do Lote (${packLabel})`}
                 value={data.lotWeightKg}
                 onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
                 step="0.001"
                 suffix={baseSharedLow}
                 displayDecimals={3}
+                hint={
+                  parseDec(data.sharedUnits) > 0
+                    ? `× ${parseDec(data.sharedUnits).toLocaleString("pt-BR")} un`
+                    : undefined
+                }
               />
               <Op>=</Op>
               <FormulaInput
@@ -717,11 +731,6 @@ export function EntryItemCard({
                 suffix={baseSharedLow}
                 highlight
                 displayDecimals={3}
-                hint={
-                  parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
-                    ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${baseSharedLow}/un`
-                    : undefined
-                }
               />
             </div>
             {/* Conversão bidirecional KG↔L do total */}
@@ -802,8 +811,12 @@ export function EntryItemCard({
               onChange={(e) => onChange({ totalValue: e.target.value })}
             />
           </div>
-          {t.totalValue > 0 && (
-            <div className="grid grid-cols-2 gap-2">
+          {t.totalValue > 0 && (() => {
+            const convFactor = parseDec(data.conversionFactor ?? "");
+            const showAlt = !!(t.sharedActive && data.conversionEnabled && convFactor > 0 && t.totalKg > 0);
+            const cols = showAlt ? "grid-cols-3" : "grid-cols-2";
+            return (
+            <div className={cn("grid gap-2", cols)}>
               <CostCard
                 label={`Custo / ${t.sharedActive ? baseSharedLow : totalLabel.toString().toLowerCase()}`}
                 value={
@@ -829,8 +842,17 @@ export function EntryItemCard({
                 }
                 tone="alt"
               />
+              {showAlt && (
+                <CostCard
+                  label={`Custo / ${altSharedLow} (equiv.)`}
+                  value={fmtBRL(t.totalValue / (t.totalKg * convFactor))}
+                  tone="primary"
+                />
+              )}
             </div>
-          )}
+            );
+          })()}
+
         </div>
       </div>
 
@@ -999,65 +1021,82 @@ function HelpTip({ text }: { text: string }) {
   );
 }
 
-function BoxMultiplier({
+function WholesaleQty({
   boxes,
   factor,
   units,
-  onChange,
+  wholesale,
+  onToggle,
+  onChangeBoxes,
+  onChangeFactor,
+  onChangeUnits,
 }: {
   boxes: string;
   factor: string;
   units: string;
-  onChange: (patch: { boxes?: string; factor?: string }) => void;
+  wholesale: boolean;
+  onToggle: (v: boolean) => void;
+  onChangeBoxes: (v: string) => void;
+  onChangeFactor: (v: string) => void;
+  onChangeUnits: (v: string) => void;
 }) {
   const b = parseDec(boxes);
   const f = parseDec(factor);
   const computed = b > 0 && f > 0 ? Math.round(b * f) : 0;
+  const u = parseDec(units);
   return (
-    <div className="mb-2 flex items-end gap-2 rounded-md border border-dashed border-border bg-background/40 p-2">
-      <div className="flex-1 space-y-1">
-        <div className="flex items-center gap-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Caixas
-          </Label>
-          <HelpTip text="Multiplique caixas pelo Fator de Embalagem para preencher Qtd. Unidades automaticamente. Ex.: 5 caixas × 12 = 60 un." />
-        </div>
-        <Input
-          type="number"
-          inputMode="decimal"
-          step="0.001"
-          min="0"
-          placeholder="0"
-          value={boxes}
-          onChange={(e) => onChange({ boxes: e.target.value })}
-          className="h-9 tabular-nums"
-        />
-      </div>
-      <div className="pb-2 text-base font-semibold text-muted-foreground">×</div>
-      <div className="flex-1 space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          Fator de Embalagem
+    <div className="rounded-md border border-dashed border-border bg-background/40 p-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Quantidade de Unidades
         </Label>
+        <label className="flex cursor-pointer items-center gap-1.5">
+          <span className="text-[10px] font-medium text-muted-foreground">
+            Volume de Compra (Caixa/Fardo)
+          </span>
+          <Switch checked={wholesale} onCheckedChange={onToggle} />
+        </label>
+      </div>
+      {wholesale ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="number"
+            inputMode="decimal"
+            step="1"
+            min="0"
+            placeholder="Volume"
+            value={boxes}
+            onChange={(e) => onChangeBoxes(e.target.value)}
+            className="h-9 w-20 tabular-nums text-center"
+            title="Volume de Compra (caixas/fardos)"
+          />
+          <span className="text-base font-semibold text-muted-foreground">×</span>
+          <Input
+            type="number"
+            inputMode="numeric"
+            step="1"
+            min="0"
+            placeholder="Fator"
+            value={factor}
+            onChange={(e) => onChangeFactor(e.target.value)}
+            className="h-9 w-20 tabular-nums text-center"
+            title="Fator (unidades por embalagem)"
+          />
+          <span className="text-base font-semibold text-muted-foreground">=</span>
+          <div className="flex h-9 min-w-[80px] flex-1 items-center justify-end rounded-md border border-primary/40 bg-primary/10 px-3 text-sm font-bold tabular-nums text-primary">
+            {computed > 0 ? `${computed} un` : (u > 0 ? `${u} un` : "—")}
+          </div>
+        </div>
+      ) : (
         <Input
-          type="number"
+          type="text"
           inputMode="numeric"
-          step="1"
-          min="0"
-          placeholder="un/caixa"
-          value={factor}
-          onChange={(e) => onChange({ factor: e.target.value })}
+          placeholder="0 un"
+          value={units}
+          onChange={(e) => onChangeUnits(e.target.value)}
           className="h-9 tabular-nums"
         />
-      </div>
-      <div className="pb-2 text-base font-semibold text-muted-foreground">=</div>
-      <div className="flex-1 space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          → Qtd. Unidades
-        </Label>
-        <div className="flex h-9 items-center justify-end rounded-md border border-input bg-muted/30 px-3 text-sm font-semibold tabular-nums text-muted-foreground">
-          {computed > 0 ? `${computed} un` : (parseDec(units) > 0 ? `${parseDec(units)} un` : "—")}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
