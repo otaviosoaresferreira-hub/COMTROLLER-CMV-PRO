@@ -799,8 +799,8 @@ export function EntryItemCard({
             </div>
           )}
 
-        {/* Valor Total */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        {/* Valor Total + Cards de Custo destacados */}
+        <div className="mt-3 space-y-2">
           <div className="space-y-1">
             <Label className="text-xs">Valor Total (R$) *</Label>
             <Input
@@ -813,22 +813,35 @@ export function EntryItemCard({
               onChange={(e) => onChange({ totalValue: e.target.value })}
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Custo unitário</Label>
-            <div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-muted/50 px-3 text-sm font-semibold tabular-nums">
-              <span>{t.unitCost > 0 ? `${fmtBRL(t.unitCost)} / ${totalLabel}` : "—"}</span>
-              {t.sharedActive && t.totalValue > 0 && (
-                <span className="flex flex-col items-end text-[10px] font-normal leading-tight text-muted-foreground">
-                  {t.totalKg > 0 && (
-                    <span>{fmtBRL(t.totalValue / t.totalKg)}/kg</span>
-                  )}
-                  {t.units > 0 && (
-                    <span>{fmtBRL(t.totalValue / t.units)}/un</span>
-                  )}
-                </span>
-              )}
+          {t.totalValue > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              <CostCard
+                label={`Custo / ${t.sharedActive ? baseSharedLow : totalLabel.toString().toLowerCase()}`}
+                value={
+                  t.sharedActive
+                    ? t.totalKg > 0
+                      ? fmtBRL(t.totalValue / t.totalKg)
+                      : "—"
+                    : t.stockQty > 0
+                      ? fmtBRL(t.totalValue / t.stockQty)
+                      : "—"
+                }
+              />
+              <CostCard
+                label="Custo / un"
+                value={
+                  t.sharedActive
+                    ? t.units > 0
+                      ? fmtBRL(t.totalValue / t.units)
+                      : "—"
+                    : t.qty > 0 && t.pack > 0
+                      ? fmtBRL(t.totalValue / (t.qty * t.pack))
+                      : "—"
+                }
+                tone="alt"
+              />
             </div>
-          </div>
+          )}
         </div>
       </div>
 
