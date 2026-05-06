@@ -53,7 +53,7 @@ type Item = {
   avg_weight_g?: number;
   standard_weight_g?: number;
 };
-type Location = { id: string; name: string; stock_mode?: string | null };
+type Location = { id: string; name: string; stock_mode?: string | null; is_shared?: boolean | null };
 type StockLevel = { item_id: string; location_id: string; current_stock: number };
 type LocationItemFactor = {
   location_id: string;
