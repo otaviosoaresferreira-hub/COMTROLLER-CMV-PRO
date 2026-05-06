@@ -413,8 +413,12 @@ export function TransferDialog({
 
       const fromName =
         locations.find((l) => l.id === fromId)?.name ?? "Origem";
-      const toName = locations.find((l) => l.id === toId)?.name ?? "Destino";
-      const transferNote = `Remanejamento Interno: ${fromName} → ${toName}`;
+      const toLoc = locations.find((l) => l.id === toId);
+      const toName = toLoc?.name ?? "Destino";
+      const toIsShared = !!toLoc?.is_shared;
+      const transferNote = toIsShared
+        ? `Remanejamento Interno: ${fromName} → ${toName} (Uso Comum — saldo substituído)`
+        : `Remanejamento Interno: ${fromName} → ${toName}`;
 
       // Aplica cada item
       for (const [iid, total] of consolidated) {
