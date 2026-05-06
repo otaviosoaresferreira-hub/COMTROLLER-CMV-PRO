@@ -169,6 +169,7 @@ export function ProductionDialog({
   const [proportionFactor, setProportionFactor] = useState(1); // multiplicador aplicado pelo "Recalcular proporcional"
   const [batchExpiry, setBatchExpiry] = useState(""); // validade opcional do lote produzido (YYYY-MM-DD)
   const [locationId, setLocationId] = useState("");
+  const [consumeFromShared, setConsumeFromShared] = useState(false);
 
   // ============ Modo "Criar Receita na Hora" (on-the-fly) ============
   // Quando ativo, ignora o seletor de receita e usa estes campos para montar
