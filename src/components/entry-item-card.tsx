@@ -1059,7 +1059,7 @@ function WholesaleQty({
         </Label>
         <label className="flex cursor-pointer items-center gap-1.5">
           <span className="text-[10px] font-medium text-muted-foreground">
-            Volume de Compra (Caixa/Fardo)
+            Calcular por Volume
           </span>
           <Switch checked={wholesale} onCheckedChange={onToggle} />
         </label>
@@ -1069,25 +1069,25 @@ function WholesaleQty({
           <Input
             type="number"
             inputMode="decimal"
-            step="1"
+            step="0.001"
             min="0"
             placeholder="Volume"
             value={boxes}
             onChange={(e) => onChangeBoxes(e.target.value)}
-            className="h-9 w-20 tabular-nums text-center"
-            title="Volume de Compra (caixas/fardos)"
+            className="h-9 w-24 tabular-nums text-center"
+            title="Volume total da compra"
           />
-          <span className="text-base font-semibold text-muted-foreground">×</span>
+          <span className="text-base font-semibold text-muted-foreground">÷</span>
           <Input
             type="number"
-            inputMode="numeric"
-            step="1"
+            inputMode="decimal"
+            step="0.001"
             min="0"
-            placeholder="Fator"
+            placeholder="Fator de Conversão"
             value={factor}
             onChange={(e) => onChangeFactor(e.target.value)}
-            className="h-9 w-20 tabular-nums text-center"
-            title="Fator (unidades por embalagem)"
+            className="h-9 w-32 tabular-nums text-center"
+            title="Fator de Conversão (volume por unidade)"
           />
           <span className="text-base font-semibold text-muted-foreground">=</span>
           <div className="flex h-9 min-w-[80px] flex-1 items-center justify-end rounded-md border border-primary/40 bg-primary/10 px-3 text-sm font-bold tabular-nums text-primary">
