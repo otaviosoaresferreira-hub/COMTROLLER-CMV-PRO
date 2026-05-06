@@ -158,7 +158,7 @@ function RootComponent() {
               <Outlet />
             </AuthGate>
             <Toaster position="top-center" richColors />
-            <ThemeToggle />
+            
           </ManagerModeProvider>
         </BrandingProvider>
       </AuthProvider>
