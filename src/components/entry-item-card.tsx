@@ -68,6 +68,12 @@ export type EntryCardData = {
   newWeightVariable: boolean;
   /** Peso base por unidade — em KG (string PT-BR ou EN). */
   newStandardWeightKg: string;
+  /** Unidade base do compartilhado: "KG" ou "L". Default "KG". */
+  sharedBaseUnit?: "KG" | "L";
+  /** Habilita fator de conversão entre KG ↔ L. */
+  conversionEnabled?: boolean;
+  /** Fator: 1 [sharedBaseUnit] = X [unidade alternativa]. */
+  conversionFactor?: string;
 
   // Motor de cálculo
   /** Quantidade comprada (em embalagens, ou direto na unidade). */
@@ -76,6 +82,12 @@ export type EntryCardData = {
   packQty: string;
   /** Valor total da linha (R$). */
   totalValue: string;
+
+  // Multiplicador de embalagem (caixas)
+  /** Nº de caixas/fardos. */
+  packBoxes?: string;
+  /** Unidades por caixa. */
+  packFactor?: string;
 
   // Lote — Unidade Compartilhada
   sharedUnits: string;
@@ -129,9 +141,14 @@ export function makeBlankEntryCard(): EntryCardData {
     newSharedEnabled: false,
     newWeightVariable: false,
     newStandardWeightKg: "",
+    sharedBaseUnit: "KG",
+    conversionEnabled: false,
+    conversionFactor: "1,000",
     quantity: "",
     packQty: "1",
     totalValue: "",
+    packBoxes: "",
+    packFactor: "",
     sharedUnits: "",
     sharedTotalKg: "",
     lotWeightKg: "",
@@ -310,14 +327,18 @@ export function EntryItemCard({
   }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
+  const baseShared = (data.sharedBaseUnit ?? "KG") as "KG" | "L";
+  const baseSharedLow = baseShared.toLowerCase();
+  const altShared: "KG" | "L" = baseShared === "KG" ? "L" : "KG";
+  const altSharedLow = altShared.toLowerCase();
   const packLabel = t.sharedActive
-    ? "kg/un"
+    ? `${baseSharedLow}/un`
     : t.effectiveUnit === "KG"
       ? "kg/emb"
       : t.effectiveUnit === "L"
         ? "L/emb"
         : "un/emb";
-  const totalLabel = t.sharedActive ? "kg" : t.effectiveUnit;
+  const totalLabel = t.sharedActive ? baseSharedLow : t.effectiveUnit;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -518,7 +539,7 @@ export function EntryItemCard({
                       <ToggleGroupItem
                         value="fix"
                         size="sm"
-                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                        className="h-9 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
                       >
                         Peso Fixo
                       </ToggleGroupItem>
@@ -532,7 +553,7 @@ export function EntryItemCard({
                       <ToggleGroupItem
                         value="var"
                         size="sm"
-                        className="h-9 px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary border"
+                        className="h-9 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold data-[state=on]:shadow-md"
                       >
                         Peso Variável
                       </ToggleGroupItem>
@@ -544,7 +565,7 @@ export function EntryItemCard({
                 </ToggleGroup>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Peso Base (kg/un) *</Label>
+                <Label className="text-xs">Peso Base ({baseSharedLow}/un) *</Label>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -555,7 +576,6 @@ export function EntryItemCard({
                   onChange={(e) => {
                     const v = e.target.value;
                     const patch: Partial<EntryCardData> = { newStandardWeightKg: v };
-                    // Em Peso Fixo, o lote acompanha o Peso Base.
                     if (!data.newWeightVariable) {
                       patch.lotWeightKg = v;
                       const u = parseDec(data.sharedUnits);
@@ -573,6 +593,65 @@ export function EntryItemCard({
               </div>
             </div>
           )}
+
+          {/* L5: Unidade base (KG/L) + Fator de Conversão */}
+          {data.newSharedEnabled && (
+            <div className="space-y-2 rounded-md border border-border bg-muted/30 p-2">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-3">
+                <Label className="text-xs font-medium">Unidade base</Label>
+                <ToggleGroup
+                  type="single"
+                  value={baseShared}
+                  onValueChange={(v) => {
+                    if (!v) return;
+                    onChange({ sharedBaseUnit: v as "KG" | "L" });
+                  }}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem
+                    value="KG"
+                    size="sm"
+                    className="h-8 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold"
+                  >
+                    KG
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="L"
+                    size="sm"
+                    className="h-8 px-3 text-xs border data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:font-bold"
+                  >
+                    L
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <label className="flex cursor-pointer items-center justify-between gap-2 text-xs">
+                <span className="flex items-center gap-1 font-medium">
+                  Fator de Conversão
+                  <HelpTip text="Ative para vincular KG ↔ L. O fator atua nos bastidores nas fichas técnicas e inventário; o custo final usa sempre a unidade base escolhida." />
+                </span>
+                <Switch
+                  checked={!!data.conversionEnabled}
+                  onCheckedChange={(v) => onChange({ conversionEnabled: v })}
+                />
+              </label>
+              {data.conversionEnabled && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="tabular-nums text-muted-foreground">1 {baseSharedLow} =</span>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.001"
+                    min="0"
+                    className="h-8 w-28 text-center tabular-nums"
+                    placeholder="1,000"
+                    value={data.conversionFactor ?? ""}
+                    onChange={(e) => onChange({ conversionFactor: e.target.value })}
+                  />
+                  <span className="tabular-nums text-muted-foreground">{altSharedLow}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -586,43 +665,93 @@ export function EntryItemCard({
         </div>
 
         {t.sharedActive ? (
-          // SHARED: Qtd × Peso do Lote = Total kg (bidirecional)
-          <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
-            <FormulaInput
-              label="Qtd. Unidades"
-              value={data.sharedUnits}
-              onChange={(v) =>
-                onChange(applyBidirectional(data, "units", v.replace(/[^\d]/g, "")))
-              }
-              step="1"
-              inputMode="numeric"
-              suffix="un"
+          <>
+            {/* Multiplicador de embalagem (Caixas × Fator → Qtd. Unidades) */}
+            <BoxMultiplier
+              boxes={data.packBoxes ?? ""}
+              factor={data.packFactor ?? ""}
+              units={data.sharedUnits}
+              onChange={(patch) => {
+                const boxes = patch.boxes !== undefined ? patch.boxes : (data.packBoxes ?? "");
+                const factor =
+                  patch.factor !== undefined ? patch.factor : (data.packFactor ?? "");
+                const next: Partial<EntryCardData> = {
+                  packBoxes: boxes,
+                  packFactor: factor,
+                };
+                const b = parseDec(boxes);
+                const f = parseDec(factor);
+                if (b > 0 && f > 0) {
+                  const newUnits = String(Math.round(b * f));
+                  Object.assign(next, applyBidirectional(data, "units", newUnits));
+                }
+                onChange(next);
+              }}
             />
-            <Op>×</Op>
-            <FormulaInput
-              label={`Peso do Lote Atual (${packLabel})`}
-              value={data.lotWeightKg}
-              onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
-              step="0.001"
-              suffix="kg"
-              displayDecimals={3}
-            />
-            <Op>=</Op>
-            <FormulaInput
-              label="Peso Total"
-              value={data.sharedTotalKg}
-              onChange={(v) => onChange(applyBidirectional(data, "total", v))}
-              step="0.001"
-              suffix="kg"
-              highlight
-              displayDecimals={3}
-              hint={
-                parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
-                  ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
-                  : undefined
-              }
-            />
-          </div>
+            <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
+              <FormulaInput
+                label="Qtd. Unidades"
+                value={data.sharedUnits}
+                onChange={(v) => {
+                  const cleaned = v.replace(/[^\d]/g, "");
+                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                  // Bidirecional com Fator de Embalagem: recalcula Caixas se Fator preenchido.
+                  const f = parseDec(data.packFactor ?? "");
+                  const u = parseDec(cleaned);
+                  if (f > 0 && u > 0) {
+                    patch.packBoxes = (u / f).toLocaleString("en-US", {
+                      maximumFractionDigits: 3,
+                      useGrouping: false,
+                    });
+                  }
+                  onChange(patch);
+                }}
+                step="1"
+                inputMode="numeric"
+                suffix="un"
+              />
+              <Op>×</Op>
+              <FormulaInput
+                label={`Peso do Lote Atual (${packLabel})`}
+                value={data.lotWeightKg}
+                onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
+                step="0.001"
+                suffix={baseSharedLow}
+                displayDecimals={3}
+              />
+              <Op>=</Op>
+              <FormulaInput
+                label="Peso Total"
+                value={data.sharedTotalKg}
+                onChange={(v) => onChange(applyBidirectional(data, "total", v))}
+                step="0.001"
+                suffix={baseSharedLow}
+                highlight
+                displayDecimals={3}
+                hint={
+                  parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
+                    ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${baseSharedLow}/un`
+                    : undefined
+                }
+              />
+            </div>
+            {/* Conversão bidirecional KG↔L do total */}
+            {data.conversionEnabled && parseDec(data.conversionFactor ?? "") > 0 && (
+              <div className="mt-2 flex items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-2 py-1.5 text-xs">
+                <span className="font-medium text-muted-foreground">Equivalente:</span>
+                <span className="tabular-nums font-semibold text-primary">
+                  {(parseDec(data.sharedTotalKg) * parseDec(data.conversionFactor ?? "1")).toLocaleString(
+                    "pt-BR",
+                    { maximumFractionDigits: 3 },
+                  )}{" "}
+                  {altSharedLow}
+                </span>
+                <span className="text-muted-foreground">
+                  (fator 1 {baseSharedLow} = {parseDec(data.conversionFactor ?? "1").toLocaleString("pt-BR", { maximumFractionDigits: 3 })} {altSharedLow})
+                </span>
+              </div>
+            )}
+          </>
         ) : (
           // NÃO-SHARED: Quantidade × Un/Emb = Total
           <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
@@ -670,8 +799,8 @@ export function EntryItemCard({
             </div>
           )}
 
-        {/* Valor Total */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        {/* Valor Total + Cards de Custo destacados */}
+        <div className="mt-3 space-y-2">
           <div className="space-y-1">
             <Label className="text-xs">Valor Total (R$) *</Label>
             <Input
@@ -684,22 +813,35 @@ export function EntryItemCard({
               onChange={(e) => onChange({ totalValue: e.target.value })}
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Custo unitário</Label>
-            <div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-muted/50 px-3 text-sm font-semibold tabular-nums">
-              <span>{t.unitCost > 0 ? `${fmtBRL(t.unitCost)} / ${totalLabel}` : "—"}</span>
-              {t.sharedActive && t.totalValue > 0 && (
-                <span className="flex flex-col items-end text-[10px] font-normal leading-tight text-muted-foreground">
-                  {t.totalKg > 0 && (
-                    <span>{fmtBRL(t.totalValue / t.totalKg)}/kg</span>
-                  )}
-                  {t.units > 0 && (
-                    <span>{fmtBRL(t.totalValue / t.units)}/un</span>
-                  )}
-                </span>
-              )}
+          {t.totalValue > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              <CostCard
+                label={`Custo / ${t.sharedActive ? baseSharedLow : totalLabel.toString().toLowerCase()}`}
+                value={
+                  t.sharedActive
+                    ? t.totalKg > 0
+                      ? fmtBRL(t.totalValue / t.totalKg)
+                      : "—"
+                    : t.stockQty > 0
+                      ? fmtBRL(t.totalValue / t.stockQty)
+                      : "—"
+                }
+              />
+              <CostCard
+                label="Custo / un"
+                value={
+                  t.sharedActive
+                    ? t.units > 0
+                      ? fmtBRL(t.totalValue / t.units)
+                      : "—"
+                    : t.qty > 0 && t.pack > 0
+                      ? fmtBRL(t.totalValue / (t.qty * t.pack))
+                      : "—"
+                }
+                tone="alt"
+              />
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -865,5 +1007,106 @@ function HelpTip({ text }: { text: string }) {
         {text}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+function BoxMultiplier({
+  boxes,
+  factor,
+  units,
+  onChange,
+}: {
+  boxes: string;
+  factor: string;
+  units: string;
+  onChange: (patch: { boxes?: string; factor?: string }) => void;
+}) {
+  const b = parseDec(boxes);
+  const f = parseDec(factor);
+  const computed = b > 0 && f > 0 ? Math.round(b * f) : 0;
+  return (
+    <div className="mb-2 flex items-end gap-2 rounded-md border border-dashed border-border bg-background/40 p-2">
+      <div className="flex-1 space-y-1">
+        <div className="flex items-center gap-1">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Caixas
+          </Label>
+          <HelpTip text="Multiplique caixas pelo Fator de Embalagem para preencher Qtd. Unidades automaticamente. Ex.: 5 caixas × 12 = 60 un." />
+        </div>
+        <Input
+          type="number"
+          inputMode="decimal"
+          step="0.001"
+          min="0"
+          placeholder="0"
+          value={boxes}
+          onChange={(e) => onChange({ boxes: e.target.value })}
+          className="h-9 tabular-nums"
+        />
+      </div>
+      <div className="pb-2 text-base font-semibold text-muted-foreground">×</div>
+      <div className="flex-1 space-y-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          Fator de Embalagem
+        </Label>
+        <Input
+          type="number"
+          inputMode="numeric"
+          step="1"
+          min="0"
+          placeholder="un/caixa"
+          value={factor}
+          onChange={(e) => onChange({ factor: e.target.value })}
+          className="h-9 tabular-nums"
+        />
+      </div>
+      <div className="pb-2 text-base font-semibold text-muted-foreground">=</div>
+      <div className="flex-1 space-y-1">
+        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          → Qtd. Unidades
+        </Label>
+        <div className="flex h-9 items-center justify-end rounded-md border border-input bg-muted/30 px-3 text-sm font-semibold tabular-nums text-muted-foreground">
+          {computed > 0 ? `${computed} un` : (parseDec(units) > 0 ? `${parseDec(units)} un` : "—")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CostCard({
+  label,
+  value,
+  tone = "primary",
+}: {
+  label: string;
+  value: string;
+  tone?: "primary" | "alt";
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border-2 px-3 py-2",
+        tone === "primary"
+          ? "border-primary/60 bg-primary/10"
+          : "border-emerald-500/50 bg-emerald-500/10",
+      )}
+    >
+      <div
+        className={cn(
+          "text-[10px] font-semibold uppercase tracking-wide",
+          tone === "primary" ? "text-primary/80" : "text-emerald-700 dark:text-emerald-400",
+        )}
+      >
+        {label}
+      </div>
+      <div
+        className={cn(
+          "text-lg font-bold tabular-nums leading-tight",
+          tone === "primary" ? "text-primary" : "text-emerald-700 dark:text-emerald-400",
+        )}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
