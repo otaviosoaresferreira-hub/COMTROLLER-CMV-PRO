@@ -119,7 +119,7 @@ function LocalPage() {
           .eq("is_free", false),
         supabase
           .from("locations")
-          .select("id,name,stock_mode,location_type,parent_id,operation_type")
+          .select("id,name,stock_mode,location_type,parent_id,operation_type,is_shared")
           .eq("id", locationId)
           .single(),
         supabase
