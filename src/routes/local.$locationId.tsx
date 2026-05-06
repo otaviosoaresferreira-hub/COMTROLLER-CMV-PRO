@@ -739,6 +739,8 @@ function LocalPage() {
                                       Transferir
                                     </Button>
                                   )}
+                                </div>
+                              )}
                             </li>
                           );
                         })}
