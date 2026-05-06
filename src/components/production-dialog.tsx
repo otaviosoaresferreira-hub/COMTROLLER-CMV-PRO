@@ -198,7 +198,7 @@ export function ProductionDialog({
             "id,name,unit,cost_price,category_id,shared_unit_enabled,standard_weight_g,avg_weight_g",
           )
           .eq("is_active", true),
-        supabase.from("locations").select("id,name,stock_mode").order("name"),
+        supabase.from("locations").select("id,name,stock_mode,is_shared").order("name"),
         supabase.from("stock_levels").select("item_id,location_id,current_stock"),
         supabase.from("categories").select("id,name"),
         supabase
