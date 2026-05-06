@@ -179,7 +179,7 @@ export function AppSidebar() {
             />
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-1 w-full">
             <img
               src={logoSrc}
               alt="Controller CMV Pro"
