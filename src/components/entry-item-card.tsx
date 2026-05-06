@@ -330,6 +330,62 @@ export function EntryItemCard({
   }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
+
+  // Calculadora bidirecional: rastreia os dois últimos campos tocados pelo usuário.
+  // O terceiro (não tocado mais recentemente) é o "computado" automaticamente.
+  type CalcField = "units" | "lot" | "total";
+  const [calcTouched, setCalcTouched] = useState<[CalcField, CalcField]>(["units", "lot"]);
+  const computedField: CalcField = (["units", "lot", "total"] as CalcField[]).find(
+    (f) => f !== calcTouched[0] && f !== calcTouched[1],
+  )!;
+
+  const touchCalcField = (f: CalcField) => {
+    setCalcTouched((prev) => {
+      if (prev[0] === f) return prev;
+      if (prev[1] === f) return [f, prev[0]];
+      return [f, prev[0]];
+    });
+  };
+
+  /** Recalcula o campo "computado" com base nos dois tocados, usando A × B = C. */
+  const recomputeCalc = (
+    patch: Partial<EntryCardData>,
+    overrideTouched?: [CalcField, CalcField],
+  ): Partial<EntryCardData> => {
+    const touched = overrideTouched ?? calcTouched;
+    const computed = (["units", "lot", "total"] as CalcField[]).find(
+      (f) => f !== touched[0] && f !== touched[1],
+    )!;
+    const merged = { ...data, ...patch };
+    const u = parseDec(merged.sharedUnits);
+    const l = parseDec(merged.lotWeightKg);
+    const tot = parseDec(merged.sharedTotalKg);
+    const toState = (n: number) =>
+      Number.isFinite(n) && n > 0
+        ? n.toLocaleString("en-US", { maximumFractionDigits: 12, useGrouping: false })
+        : "";
+    if (computed === "total" && u > 0 && l > 0) patch.sharedTotalKg = toState(u * l);
+    else if (computed === "lot" && u > 0 && tot > 0) patch.lotWeightKg = toState(tot / u);
+    else if (computed === "units" && l > 0 && tot > 0)
+      patch.sharedUnits = String(Math.max(0, Math.round(tot / l)));
+    return patch;
+  };
+
+  const handleCalcChange = (field: CalcField, rawValue: string) => {
+    const newTouched: [CalcField, CalcField] =
+      calcTouched[0] === field
+        ? calcTouched
+        : calcTouched[1] === field
+          ? [field, calcTouched[0]]
+          : [field, calcTouched[0]];
+    setCalcTouched(newTouched);
+    const patch: Partial<EntryCardData> = {};
+    if (field === "units") patch.sharedUnits = rawValue;
+    if (field === "lot") patch.lotWeightKg = rawValue;
+    if (field === "total") patch.sharedTotalKg = rawValue;
+    recomputeCalc(patch, newTouched);
+    onChange(patch);
+  };
   const baseShared = (data.sharedBaseUnit ?? "KG") as "KG" | "L";
   const baseSharedLow = baseShared.toLowerCase();
   const altShared: "KG" | "L" = baseShared === "KG" ? "L" : "KG";
