@@ -762,51 +762,6 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                 </p>
               </div>
 
-              {effectiveSharedEnabled && (
-                <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
-                  <div className="space-y-1 text-xs">
-                    <p className="font-semibold text-primary">
-                      Unidade compartilhada: contado em UN com peso médio em KG.
-                    </p>
-                    <p className="text-muted-foreground">
-                      Defina abaixo se o peso por unidade é fixo ou variável.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSharedMode("FIXED")}
-                      className={cn(
-                        "rounded-md border px-3 py-2 text-left text-xs transition",
-                        sharedMode === "FIXED"
-                          ? "border-primary bg-background shadow-sm"
-                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
-                      )}
-                    >
-                      <div className="font-semibold text-foreground">Peso Fixo</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Ex: Balde de 3 kg, Pacote de 5 kg
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSharedMode("VARIABLE")}
-                      className={cn(
-                        "rounded-md border px-3 py-2 text-left text-xs transition",
-                        sharedMode === "VARIABLE"
-                          ? "border-primary bg-background shadow-sm"
-                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
-                      )}
-                    >
-                      <div className="font-semibold text-foreground">Peso Variável</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Ex: Peça de Picanha, Costela
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>
