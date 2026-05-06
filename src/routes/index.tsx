@@ -470,27 +470,48 @@ function LocationCard({
   isManager: boolean;
 }) {
   const stats = destinationStats(loc);
+  const shared = isSharedLocation(loc);
+  const SharedIcon = SHARED_LOCATION_META.icon;
   return (
     <Link
       to="/local/$locationId"
       params={{ locationId: loc.id }}
-      className="block rounded-xl border border-border bg-card p-4 shadow-sm transition active:scale-[0.99] hover:border-primary/30"
+      className={`block rounded-xl border p-4 shadow-sm transition active:scale-[0.99] ${
+        shared
+          ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/70"
+          : "border-border bg-card hover:border-primary/30"
+      }`}
     >
       <div className="flex items-center gap-2">
-        <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
-          <MapPin className="h-5 w-5" />
+        <div
+          className={`grid h-10 w-10 place-items-center rounded-lg ${
+            shared ? SHARED_LOCATION_META.tone : "bg-accent text-accent-foreground"
+          }`}
+        >
+          {shared ? <SharedIcon className="h-5 w-5" /> : <MapPin className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold leading-tight">{loc.name}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1">
-            <Badge
-              variant="secondary"
-              className="h-4 px-1.5 text-[9px] font-medium uppercase tracking-wide"
-            >
-              {loc.operation_type === "self_service"
-                ? "Operação de Quilo"
-                : "Operação de Cardápio"}
-            </Badge>
+            {shared ? (
+              <Badge
+                variant="outline"
+                className="h-4 gap-0.5 border-amber-500/40 bg-amber-500/15 px-1.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300"
+                title="Local compartilhado entre operações da unidade"
+              >
+                <SharedIcon className="h-2.5 w-2.5" />
+                Uso Comum
+              </Badge>
+            ) : (
+              <Badge
+                variant="secondary"
+                className="h-4 px-1.5 text-[9px] font-medium uppercase tracking-wide"
+              >
+                {loc.operation_type === "self_service"
+                  ? "Operação de Quilo"
+                  : "Operação de Cardápio"}
+              </Badge>
+            )}
             {stats.mirrorsCentral && (
               <Badge
                 className="h-4 gap-0.5 border-amber-500/40 bg-amber-500/15 px-1.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
