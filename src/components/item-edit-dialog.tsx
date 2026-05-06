@@ -51,6 +51,7 @@ interface Props {
 }
 
 const UNIT_OPTIONS = ["UN", "KG", "G", "L", "ML", "CX", "DZ"];
+const SHARED_UNIT_OPTIONS = ["KG", "L", "UN"];
 
 export function ItemEditDialog({ itemId, open, onClose }: Props) {
   const qc = useQueryClient();
@@ -161,6 +162,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
   const [avgWeight, setAvgWeight] = useState("");
   const [minStock, setMinStock] = useState("");
   const [contabilizaCmv, setContabilizaCmv] = useState(true);
+  const [sharedMode, setSharedMode] = useState<"FIXED" | "VARIABLE">("FIXED");
   const [newXmlName, setNewXmlName] = useState("");
 
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -184,6 +186,9 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       setMinStock(item.min_stock ? String(item.min_stock) : "");
       setContabilizaCmv(
         (item as { contabiliza_cmv?: boolean }).contabiliza_cmv !== false,
+      );
+      setSharedMode(
+        (item as { weight_variable?: boolean }).weight_variable ? "VARIABLE" : "FIXED",
       );
       setNewXmlName("");
     }
@@ -282,6 +287,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       unit: unit.toLowerCase(),
       category_id: categoryId === "none" ? null : categoryId,
       shared_unit_enabled: sharedEnabled,
+      weight_variable: sharedEnabled ? sharedMode === "VARIABLE" : false,
       standard_weight_g: stdW,
       avg_weight_g: avgW,
       min_stock: isOperational ? 0 : minS,
@@ -299,6 +305,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       unit: item.unit,
       category_id: item.category_id,
       shared_unit_enabled: item.shared_unit_enabled,
+      weight_variable: (item as { weight_variable?: boolean }).weight_variable ?? false,
       standard_weight_g: Number(item.standard_weight_g ?? 0),
       avg_weight_g: Number(item.avg_weight_g ?? 0),
       min_stock: Number(item.min_stock ?? 0),
@@ -541,7 +548,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {UNIT_OPTIONS.map((u) => (
+                    {(sharedEnabled ? SHARED_UNIT_OPTIONS : UNIT_OPTIONS).map((u) => (
                       <SelectItem key={u} value={u}>
                         {u}
                       </SelectItem>
@@ -665,15 +672,47 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
               </div>
 
               {effectiveSharedEnabled && (
-                <div className="space-y-1 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
-                  <p className="font-semibold text-primary">
-                    Unidade compartilhada: Inteirado em unidade com peso médio.
-                  </p>
-                  <p className="text-muted-foreground">
-                    Exemplo: Carne Moída (KG) ↔ Hambúrguer (UN). Se um hambúrguer pesa 180g,
-                    digite <strong>0,180</strong>. Este é o valor base inicial, mas o sistema
-                    calculará o peso médio real a cada nova nota ou produção.
-                  </p>
+                <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+                  <div className="space-y-1 text-xs">
+                    <p className="font-semibold text-primary">
+                      Unidade compartilhada: contado em UN com peso médio em KG.
+                    </p>
+                    <p className="text-muted-foreground">
+                      Defina abaixo se o peso por unidade é fixo ou variável.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSharedMode("FIXED")}
+                      className={cn(
+                        "rounded-md border px-3 py-2 text-left text-xs transition",
+                        sharedMode === "FIXED"
+                          ? "border-primary bg-background shadow-sm"
+                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
+                      )}
+                    >
+                      <div className="font-semibold text-foreground">Peso Fixo</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Ex: Balde de 3 kg, Pacote de 5 kg
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSharedMode("VARIABLE")}
+                      className={cn(
+                        "rounded-md border px-3 py-2 text-left text-xs transition",
+                        sharedMode === "VARIABLE"
+                          ? "border-primary bg-background shadow-sm"
+                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/40",
+                      )}
+                    >
+                      <div className="font-semibold text-foreground">Peso Variável</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Ex: Peça de Picanha, Costela
+                      </div>
+                    </button>
+                  </div>
                 </div>
               )}
 
