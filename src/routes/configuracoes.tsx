@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Building2, Image as ImageIcon, Palette, ShieldCheck, Upload, Trash2, RotateCcw } from "lucide-react";
+import { Building2, Image as ImageIcon, Palette, ShieldCheck, Upload, Trash2, Sun, SunMoon, Moon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
-import { useBranding, DEFAULT_PRIMARY, DEFAULT_BACKGROUND } from "@/lib/branding";
+import { useBranding, type ThemeMode } from "@/lib/branding";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 

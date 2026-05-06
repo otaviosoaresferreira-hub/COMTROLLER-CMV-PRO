@@ -3,32 +3,36 @@ import defaultLogo from "@/assets/logo-controller-cmv-pro.png";
 
 export const DEFAULT_LOGO_URL = defaultLogo;
 
+export type ThemeMode = "light" | "medium" | "dark";
+
 export interface BrandingState {
   fantasyName: string;
   legalName: string;
   cnpj: string;
   logoDataUrl: string | null;
-  /** Cor primária (botões, ícones ativos, destaques) — hex */
-  primaryColor: string;
-  /** Cor de fundo das telas — hex */
-  backgroundColor: string;
+  themeMode: ThemeMode;
 }
 
-export const DEFAULT_PRIMARY = "#16a34a"; // verde
-export const DEFAULT_BACKGROUND = "#ffffff"; // branco
+/** Cor oficial primária — laranja da marca. */
+export const BRAND_PRIMARY = "#F96A0B";
+export const BRAND_PRIMARY_HOVER = "#C4520A";
+
+export const THEME_BACKGROUNDS: Record<ThemeMode, string> = {
+  light: "#F5F5F5",
+  medium: "#292E2B",
+  dark: "#111111",
+};
 
 export const DEFAULT_BRANDING: BrandingState = {
   fantasyName: "Controller CMV Pro",
   legalName: "",
   cnpj: "",
   logoDataUrl: null,
-  primaryColor: DEFAULT_PRIMARY,
-  backgroundColor: DEFAULT_BACKGROUND,
+  themeMode: "medium",
 };
-const DEFAULT = DEFAULT_BRANDING;
 
-const STORAGE_KEY = "branding-settings-v2";
-const LEGACY_STORAGE_KEY = "branding-settings-v1";
+const STORAGE_KEY = "branding-settings-v3";
+const LEGACY_KEYS = ["branding-settings-v2", "branding-settings-v1"];
 
 interface Ctx extends BrandingState {
   update: (patch: Partial<BrandingState>) => void;
@@ -58,7 +62,6 @@ function rgbToHex(r: number, g: number, b: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-/** Relative luminance per WCAG */
 function luminance(hex: string): number {
   const { r, g, b } = hexToRgb(hex);
   const a = [r, g, b].map((v) => {
@@ -82,20 +85,16 @@ function mix(aHex: string, bHex: string, t: number): string {
   return rgbToHex(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t);
 }
 
-/** Lighten or darken depending on base luminance */
 function shift(hex: string, amount: number): string {
-  // amount: positive lightens, negative darkens
   const target = amount >= 0 ? "#ffffff" : "#000000";
   return mix(hex, target, Math.abs(amount));
 }
 
-/** Build a full token palette from primary + background hex */
 function buildPalette(primary: string, background: string) {
   const dark = isDark(background);
   const fg = readableForeground(background);
   const primaryFg = readableForeground(primary);
 
-  // Surfaces derived from background
   const card = dark ? shift(background, 0.08) : shift(background, 0.02);
   const popover = card;
   const muted = dark ? shift(background, 0.14) : shift(background, 0.05);
@@ -105,47 +104,31 @@ function buildPalette(primary: string, background: string) {
   const sidebar = dark ? shift(background, 0.04) : shift(background, 0.015);
   const sidebarAccent = muted;
 
-  // Accent tinted by primary
   const accent = dark ? mix(background, primary, 0.18) : mix(background, primary, 0.12);
   const accentFg = dark ? mix(primary, "#ffffff", 0.4) : mix(primary, "#000000", 0.45);
-
   const mutedFg = dark ? mix(fg, background, 0.18) : mix(fg, background, 0.22);
 
   return {
-    background,
-    foreground: fg,
-    card,
-    cardForeground: fg,
-    popover,
-    popoverForeground: fg,
-    primary,
-    primaryForeground: primaryFg,
-    secondary,
-    secondaryForeground: fg,
-    muted,
-    mutedForeground: mutedFg,
-    accent,
-    accentForeground: accentFg,
-    border,
-    input,
-    ring: primary,
-    sidebar,
-    sidebarForeground: fg,
-    sidebarPrimary: primary,
-    sidebarPrimaryForeground: primaryFg,
-    sidebarAccent,
-    sidebarAccentForeground: fg,
-    sidebarBorder: border,
-    sidebarRing: primary,
+    background, foreground: fg, card, cardForeground: fg,
+    popover, popoverForeground: fg,
+    primary, primaryForeground: primaryFg,
+    secondary, secondaryForeground: fg,
+    muted, mutedForeground: mutedFg,
+    accent, accentForeground: accentFg,
+    border, input, ring: primary,
+    sidebar, sidebarForeground: fg,
+    sidebarPrimary: primary, sidebarPrimaryForeground: primaryFg,
+    sidebarAccent, sidebarAccentForeground: fg,
+    sidebarBorder: border, sidebarRing: primary,
     isDark: dark,
   };
 }
 
-function applyTheme(primary: string, background: string) {
+function applyTheme(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  const p = buildPalette(primary, background);
-
+  const background = THEME_BACKGROUNDS[mode];
+  const p = buildPalette(BRAND_PRIMARY, background);
   const set = (k: string, v: string) => root.style.setProperty(k, v);
 
   set("--background", p.background);
@@ -156,6 +139,7 @@ function applyTheme(primary: string, background: string) {
   set("--popover-foreground", p.popoverForeground);
   set("--primary", p.primary);
   set("--primary-foreground", p.primaryForeground);
+  set("--primary-hover", BRAND_PRIMARY_HOVER);
   set("--secondary", p.secondary);
   set("--secondary-foreground", p.secondaryForeground);
   set("--muted", p.muted);
@@ -175,45 +159,47 @@ function applyTheme(primary: string, background: string) {
   set("--sidebar-ring", p.sidebarRing);
 
   root.classList.toggle("dark", p.isDark);
+  root.dataset.themeMode = mode;
 }
 
 function loadInitial(): BrandingState {
-  if (typeof window === "undefined") return DEFAULT;
+  if (typeof window === "undefined") return DEFAULT_BRANDING;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...DEFAULT, ...JSON.parse(raw) };
-    // Migration from v1
-    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacy) {
-      const v1 = JSON.parse(legacy);
-      return {
-        ...DEFAULT,
-        fantasyName: v1.fantasyName ?? DEFAULT.fantasyName,
-        legalName: v1.legalName ?? "",
-        cnpj: v1.cnpj ?? "",
-        logoDataUrl: v1.logoDataUrl ?? null,
-      };
+    if (raw) return { ...DEFAULT_BRANDING, ...JSON.parse(raw) };
+    for (const k of LEGACY_KEYS) {
+      const legacy = localStorage.getItem(k);
+      if (legacy) {
+        const v = JSON.parse(legacy);
+        return {
+          ...DEFAULT_BRANDING,
+          fantasyName: v.fantasyName ?? DEFAULT_BRANDING.fantasyName,
+          legalName: v.legalName ?? "",
+          cnpj: v.cnpj ?? "",
+          logoDataUrl: v.logoDataUrl ?? null,
+        };
+      }
     }
-    return DEFAULT;
+    return DEFAULT_BRANDING;
   } catch {
-    return DEFAULT;
+    return DEFAULT_BRANDING;
   }
 }
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BrandingState>(DEFAULT);
+  const [state, setState] = useState<BrandingState>(DEFAULT_BRANDING);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const initial = loadInitial();
     setState(initial);
-    applyTheme(initial.primaryColor, initial.backgroundColor);
+    applyTheme(initial.themeMode);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    applyTheme(state.primaryColor, state.backgroundColor);
+    applyTheme(state.themeMode);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
@@ -222,7 +208,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   const update = (patch: Partial<BrandingState>) => setState((s) => ({ ...s, ...patch }));
-  const reset = () => setState(DEFAULT);
+  const reset = () => setState(DEFAULT_BRANDING);
 
   return (
     <BrandingContext.Provider value={{ ...state, update, reset }}>
