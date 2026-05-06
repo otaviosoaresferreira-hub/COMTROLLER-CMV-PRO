@@ -710,34 +710,17 @@ export function EntryItemCard({
             />
             <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-end gap-2">
               <FormulaInput
-                label="Qtd. Unidades"
-                value={data.sharedUnits}
-                onChange={(v) => {
-                  const cleaned = v.replace(/[^\d]/g, "");
-                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
-                  // Bidirecional com Fator de Embalagem: recalcula Caixas se Fator preenchido.
-                  const f = parseDec(data.packFactor ?? "");
-                  const u = parseDec(cleaned);
-                  if (f > 0 && u > 0) {
-                    patch.packBoxes = (u / f).toLocaleString("en-US", {
-                      maximumFractionDigits: 3,
-                      useGrouping: false,
-                    });
-                  }
-                  onChange(patch);
-                }}
-                step="1"
-                inputMode="numeric"
-                suffix="un"
-              />
-              <Op>×</Op>
-              <FormulaInput
-                label={`${noun} do Lote Atual (${packLabel})`}
+                label={`${noun} do Lote (${packLabel})`}
                 value={data.lotWeightKg}
                 onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
                 step="0.001"
                 suffix={baseSharedLow}
                 displayDecimals={3}
+                hint={
+                  parseDec(data.sharedUnits) > 0
+                    ? `× ${parseDec(data.sharedUnits).toLocaleString("pt-BR")} un`
+                    : undefined
+                }
               />
               <Op>=</Op>
               <FormulaInput
@@ -748,11 +731,6 @@ export function EntryItemCard({
                 suffix={baseSharedLow}
                 highlight
                 displayDecimals={3}
-                hint={
-                  parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
-                    ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${baseSharedLow}/un`
-                    : undefined
-                }
               />
             </div>
             {/* Conversão bidirecional KG↔L do total */}
