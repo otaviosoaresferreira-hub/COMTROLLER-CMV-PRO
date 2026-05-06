@@ -665,43 +665,93 @@ export function EntryItemCard({
         </div>
 
         {t.sharedActive ? (
-          // SHARED: Qtd × Peso do Lote = Total kg (bidirecional)
-          <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
-            <FormulaInput
-              label="Qtd. Unidades"
-              value={data.sharedUnits}
-              onChange={(v) =>
-                onChange(applyBidirectional(data, "units", v.replace(/[^\d]/g, "")))
-              }
-              step="1"
-              inputMode="numeric"
-              suffix="un"
+          <>
+            {/* Multiplicador de embalagem (Caixas × Fator → Qtd. Unidades) */}
+            <BoxMultiplier
+              boxes={data.packBoxes ?? ""}
+              factor={data.packFactor ?? ""}
+              units={data.sharedUnits}
+              onChange={(patch) => {
+                const boxes = patch.boxes !== undefined ? patch.boxes : (data.packBoxes ?? "");
+                const factor =
+                  patch.factor !== undefined ? patch.factor : (data.packFactor ?? "");
+                const next: Partial<EntryCardData> = {
+                  packBoxes: boxes,
+                  packFactor: factor,
+                };
+                const b = parseDec(boxes);
+                const f = parseDec(factor);
+                if (b > 0 && f > 0) {
+                  const newUnits = String(Math.round(b * f));
+                  Object.assign(next, applyBidirectional(data, "units", newUnits));
+                }
+                onChange(next);
+              }}
             />
-            <Op>×</Op>
-            <FormulaInput
-              label={`Peso do Lote Atual (${packLabel})`}
-              value={data.lotWeightKg}
-              onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
-              step="0.001"
-              suffix="kg"
-              displayDecimals={3}
-            />
-            <Op>=</Op>
-            <FormulaInput
-              label="Peso Total"
-              value={data.sharedTotalKg}
-              onChange={(v) => onChange(applyBidirectional(data, "total", v))}
-              step="0.001"
-              suffix="kg"
-              highlight
-              displayDecimals={3}
-              hint={
-                parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
-                  ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg/un`
-                  : undefined
-              }
-            />
-          </div>
+            <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
+              <FormulaInput
+                label="Qtd. Unidades"
+                value={data.sharedUnits}
+                onChange={(v) => {
+                  const cleaned = v.replace(/[^\d]/g, "");
+                  const patch: Partial<EntryCardData> = applyBidirectional(data, "units", cleaned);
+                  // Bidirecional com Fator de Embalagem: recalcula Caixas se Fator preenchido.
+                  const f = parseDec(data.packFactor ?? "");
+                  const u = parseDec(cleaned);
+                  if (f > 0 && u > 0) {
+                    patch.packBoxes = (u / f).toLocaleString("en-US", {
+                      maximumFractionDigits: 3,
+                      useGrouping: false,
+                    });
+                  }
+                  onChange(patch);
+                }}
+                step="1"
+                inputMode="numeric"
+                suffix="un"
+              />
+              <Op>×</Op>
+              <FormulaInput
+                label={`Peso do Lote Atual (${packLabel})`}
+                value={data.lotWeightKg}
+                onChange={(v) => onChange(applyBidirectional(data, "lot", v))}
+                step="0.001"
+                suffix={baseSharedLow}
+                displayDecimals={3}
+              />
+              <Op>=</Op>
+              <FormulaInput
+                label="Peso Total"
+                value={data.sharedTotalKg}
+                onChange={(v) => onChange(applyBidirectional(data, "total", v))}
+                step="0.001"
+                suffix={baseSharedLow}
+                highlight
+                displayDecimals={3}
+                hint={
+                  parseDec(data.sharedUnits) > 0 && parseDec(data.lotWeightKg) > 0
+                    ? `${parseDec(data.lotWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${baseSharedLow}/un`
+                    : undefined
+                }
+              />
+            </div>
+            {/* Conversão bidirecional KG↔L do total */}
+            {data.conversionEnabled && parseDec(data.conversionFactor ?? "") > 0 && (
+              <div className="mt-2 flex items-center gap-2 rounded-md border border-dashed border-primary/30 bg-primary/5 px-2 py-1.5 text-xs">
+                <span className="font-medium text-muted-foreground">Equivalente:</span>
+                <span className="tabular-nums font-semibold text-primary">
+                  {(parseDec(data.sharedTotalKg) * parseDec(data.conversionFactor ?? "1")).toLocaleString(
+                    "pt-BR",
+                    { maximumFractionDigits: 3 },
+                  )}{" "}
+                  {altSharedLow}
+                </span>
+                <span className="text-muted-foreground">
+                  (fator 1 {baseSharedLow} = {parseDec(data.conversionFactor ?? "1").toLocaleString("pt-BR", { maximumFractionDigits: 3 })} {altSharedLow})
+                </span>
+              </div>
+            )}
+          </>
         ) : (
           // NÃO-SHARED: Quantidade × Un/Emb = Total
           <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-end gap-2">
