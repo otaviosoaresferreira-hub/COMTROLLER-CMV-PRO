@@ -51,6 +51,7 @@ interface Props {
 }
 
 const UNIT_OPTIONS = ["UN", "KG", "G", "L", "ML", "CX", "DZ"];
+const SHARED_UNIT_OPTIONS = ["KG", "L", "UN"];
 
 export function ItemEditDialog({ itemId, open, onClose }: Props) {
   const qc = useQueryClient();
@@ -161,6 +162,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
   const [avgWeight, setAvgWeight] = useState("");
   const [minStock, setMinStock] = useState("");
   const [contabilizaCmv, setContabilizaCmv] = useState(true);
+  const [sharedMode, setSharedMode] = useState<"FIXED" | "VARIABLE">("FIXED");
   const [newXmlName, setNewXmlName] = useState("");
 
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -184,6 +186,9 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       setMinStock(item.min_stock ? String(item.min_stock) : "");
       setContabilizaCmv(
         (item as { contabiliza_cmv?: boolean }).contabiliza_cmv !== false,
+      );
+      setSharedMode(
+        (item as { weight_variable?: boolean }).weight_variable ? "VARIABLE" : "FIXED",
       );
       setNewXmlName("");
     }
@@ -282,6 +287,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       unit: unit.toLowerCase(),
       category_id: categoryId === "none" ? null : categoryId,
       shared_unit_enabled: sharedEnabled,
+      weight_variable: sharedEnabled ? sharedMode === "VARIABLE" : false,
       standard_weight_g: stdW,
       avg_weight_g: avgW,
       min_stock: isOperational ? 0 : minS,
@@ -299,6 +305,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       unit: item.unit,
       category_id: item.category_id,
       shared_unit_enabled: item.shared_unit_enabled,
+      weight_variable: (item as { weight_variable?: boolean }).weight_variable ?? false,
       standard_weight_g: Number(item.standard_weight_g ?? 0),
       avg_weight_g: Number(item.avg_weight_g ?? 0),
       min_stock: Number(item.min_stock ?? 0),
