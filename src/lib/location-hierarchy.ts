@@ -46,6 +46,20 @@ export const LOCATION_TYPE_META: Record<
   },
 };
 
+/** Metadados visuais para o "Uso Comum" (local compartilhado dentro de uma Unidade). */
+export const SHARED_LOCATION_META = {
+  label: "Uso Comum",
+  short: "Uso Comum",
+  icon: Soup,
+  tone:
+    "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+} as const;
+
+/** True se o local é um "Uso Comum" (compartilhado entre operações da unidade). */
+export function isSharedLocation(loc: { is_shared?: boolean | null } | null | undefined): boolean {
+  return !!loc?.is_shared;
+}
+
 /** True quando `parentType` é um pai válido para `childType`. */
 export function isValidParent(
   childType: LocationType,
