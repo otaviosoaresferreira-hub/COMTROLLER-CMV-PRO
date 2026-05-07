@@ -184,6 +184,8 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       };
       setStandardWeight(item.standard_weight_g ? fmt3(Number(item.standard_weight_g)) : "");
       setAvgWeight(item.avg_weight_g ? fmt3(Number(item.avg_weight_g)) : "");
+      const cf = Number((item as { conversion_factor?: number }).conversion_factor ?? 1);
+      setConversionFactor(Number.isFinite(cf) && cf > 0 ? String(cf) : "1");
       setMinStock(item.min_stock ? String(item.min_stock) : "");
       setContabilizaCmv(
         (item as { contabiliza_cmv?: boolean }).contabiliza_cmv !== false,
