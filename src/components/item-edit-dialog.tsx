@@ -283,6 +283,8 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
     const stdKg = Number(standardWeight.replace(",", ".")) || 0;
     const avgKg = Number(avgWeight.replace(",", ".")) || 0;
     const minS = Number(minStock.replace(",", ".")) || 0;
+    const cf = Number(conversionFactor.replace(",", "."));
+    const cfSafe = Number.isFinite(cf) && cf > 0 ? cf : 1;
     const stdW = stdKg * 1000;
     const avgW = avgKg * 1000;
     const updatePayload: Record<string, unknown> = {
@@ -293,6 +295,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       weight_variable: sharedEnabled ? sharedMode === "VARIABLE" : false,
       standard_weight_g: stdW,
       avg_weight_g: avgW,
+      conversion_factor: cfSafe,
       min_stock: isOperational ? 0 : minS,
       is_operational: isOperational,
       ...(cmvLocked ? {} : { contabiliza_cmv: contabilizaCmv }),
