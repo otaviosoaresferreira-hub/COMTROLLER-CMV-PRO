@@ -45,6 +45,8 @@ export type EntryItemRef = {
   shared_unit_enabled?: boolean;
   weight_variable?: boolean;
   standard_weight_g?: number;
+  conversion_enabled?: boolean;
+  conversion_factor?: number;
 };
 
 /**
@@ -319,14 +321,22 @@ export function EntryItemCard({
     if (lastLoadedItemId.current === selected.id) return;
     lastLoadedItemId.current = selected.id;
     const stdKg = Number(selected.standard_weight_g ?? 0) / 1000;
+    const patch: Partial<EntryCardData> = {};
     if (stdKg > 0 && !data.lotWeightKg) {
-      onChange({
-        lotWeightKg: stdKg.toLocaleString("en-US", {
-          maximumFractionDigits: 6,
-          useGrouping: false,
-        }),
+      patch.lotWeightKg = stdKg.toLocaleString("en-US", {
+        maximumFractionDigits: 6,
+        useGrouping: false,
       });
     }
+    // Pré-popula Fator de Conversão a partir do cadastro do insumo.
+    if (selected.conversion_enabled) {
+      patch.conversionEnabled = true;
+      const cf = Number(selected.conversion_factor ?? 1);
+      if (Number.isFinite(cf) && cf > 0) {
+        patch.conversionFactor = String(cf).replace(".", ",");
+      }
+    }
+    if (Object.keys(patch).length > 0) onChange(patch);
   }, [selected, data.mode, data.lotWeightKg, onChange]);
 
   const t = computeEntryTotals(data, selected);
