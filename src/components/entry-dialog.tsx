@@ -71,6 +71,8 @@ type Item = {
   avg_weight_g?: number;
   cost_price?: number;
   weight_variable?: boolean;
+  conversion_enabled?: boolean;
+  conversion_factor?: number;
 };
 type StockLevel = {
   item_id: string;

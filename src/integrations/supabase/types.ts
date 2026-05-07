@@ -953,6 +953,7 @@ export type Database = {
           avg_weight_g: number
           category_id: string | null
           contabiliza_cmv: boolean
+          conversion_enabled: boolean
           conversion_factor: number
           cost_price: number
           created_at: string
@@ -976,6 +977,7 @@ export type Database = {
           avg_weight_g?: number
           category_id?: string | null
           contabiliza_cmv?: boolean
+          conversion_enabled?: boolean
           conversion_factor?: number
           cost_price?: number
           created_at?: string
@@ -999,6 +1001,7 @@ export type Database = {
           avg_weight_g?: number
           category_id?: string | null
           contabiliza_cmv?: boolean
+          conversion_enabled?: boolean
           conversion_factor?: number
           cost_price?: number
           created_at?: string
