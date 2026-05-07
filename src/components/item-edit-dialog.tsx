@@ -770,8 +770,6 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
 
             {/* Pesos & Conversão */}
             <section className="space-y-3">
-            {/* Pesos & Conversão */}
-            <section className="space-y-3">
               <div>
                 <h3 className="text-sm font-semibold">Pesos & Conversão</h3>
                 <p className="text-xs text-muted-foreground">
