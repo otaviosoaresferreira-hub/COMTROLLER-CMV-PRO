@@ -288,7 +288,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
     const avgKg = Number(avgWeight.replace(",", ".")) || 0;
     const minS = Number(minStock.replace(",", ".")) || 0;
     const cf = Number(conversionFactor.replace(",", "."));
-    const cfSafe = Number.isFinite(cf) && cf > 0 ? cf : 1;
+    const cfSafe = conversionEnabled && Number.isFinite(cf) && cf > 0 ? cf : 1;
     const stdW = stdKg * 1000;
     const avgW = avgKg * 1000;
     const updatePayload: Record<string, unknown> = {
@@ -300,6 +300,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       standard_weight_g: stdW,
       avg_weight_g: avgW,
       conversion_factor: cfSafe,
+      conversion_enabled: conversionEnabled,
       min_stock: isOperational ? 0 : minS,
       is_operational: isOperational,
       ...(cmvLocked ? {} : { contabiliza_cmv: contabilizaCmv }),
@@ -319,6 +320,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       standard_weight_g: Number(item.standard_weight_g ?? 0),
       avg_weight_g: Number(item.avg_weight_g ?? 0),
       conversion_factor: Number((item as { conversion_factor?: number }).conversion_factor ?? 1),
+      conversion_enabled: (item as { conversion_enabled?: boolean }).conversion_enabled ?? false,
       min_stock: Number(item.min_stock ?? 0),
       is_operational: (item as { is_operational?: boolean }).is_operational ?? false,
       contabiliza_cmv: (item as { contabiliza_cmv?: boolean }).contabiliza_cmv ?? true,
@@ -522,6 +524,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
     setAvgWeight("");
     setStandardWeight("");
     setConversionFactor("1");
+    setConversionEnabled(false);
   };
 
   const unitIsKg = unit.toUpperCase() === "KG";
