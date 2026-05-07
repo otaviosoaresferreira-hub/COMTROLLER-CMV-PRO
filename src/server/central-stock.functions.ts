@@ -105,7 +105,7 @@ export const getCentralStock = createServerFn({ method: "GET" })
         supabase
           .from("items")
           .select(
-            "id,name,unit,min_stock,cost_price,category_id,is_active,shared_unit_enabled,standard_weight_g,avg_weight_g,weight_variable,is_operational,is_system,is_free,is_subproduct",
+            "id,name,unit,min_stock,cost_price,category_id,is_active,shared_unit_enabled,standard_weight_g,avg_weight_g,weight_variable,is_operational,is_system,is_free,is_subproduct,conversion_enabled,conversion_factor",
           )
           .eq("org_id", orgId)
           .limit(10000),
