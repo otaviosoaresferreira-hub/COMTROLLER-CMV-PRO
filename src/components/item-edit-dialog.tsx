@@ -51,7 +51,7 @@ interface Props {
 }
 
 const UNIT_OPTIONS = ["UN", "KG", "G", "L", "ML", "CX", "DZ"];
-const SHARED_UNIT_OPTIONS = ["KG", "L", "UN"];
+const SHARED_UNIT_OPTIONS = ["KG", "L"];
 
 export function ItemEditDialog({ itemId, open, onClose }: Props) {
   const qc = useQueryClient();
