@@ -517,6 +517,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
     setUnit(v ? "KG" : "UN");
     setAvgWeight("");
     setStandardWeight("");
+    setConversionFactor("1");
   };
 
   const unitIsKg = unit.toUpperCase() === "KG";
