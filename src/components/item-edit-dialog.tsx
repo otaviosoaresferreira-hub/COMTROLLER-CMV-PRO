@@ -314,6 +314,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
       weight_variable: (item as { weight_variable?: boolean }).weight_variable ?? false,
       standard_weight_g: Number(item.standard_weight_g ?? 0),
       avg_weight_g: Number(item.avg_weight_g ?? 0),
+      conversion_factor: Number((item as { conversion_factor?: number }).conversion_factor ?? 1),
       min_stock: Number(item.min_stock ?? 0),
       is_operational: (item as { is_operational?: boolean }).is_operational ?? false,
       contabiliza_cmv: (item as { contabiliza_cmv?: boolean }).contabiliza_cmv ?? true,
