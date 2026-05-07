@@ -159,6 +159,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
   const [sharedEnabled, setSharedEnabled] = useState(false);
   const [isOperational, setIsOperational] = useState(false);
   const [standardWeight, setStandardWeight] = useState("");
+  const [conversionFactor, setConversionFactor] = useState("1");
   const [avgWeight, setAvgWeight] = useState("");
   const [minStock, setMinStock] = useState("");
   const [contabilizaCmv, setContabilizaCmv] = useState(true);
