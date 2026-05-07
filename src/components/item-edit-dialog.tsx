@@ -770,11 +770,12 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
 
             {/* Pesos & Conversão */}
             <section className="space-y-3">
+            {/* Pesos & Conversão */}
+            <section className="space-y-3">
               <div>
                 <h3 className="text-sm font-semibold">Pesos & Conversão</h3>
                 <p className="text-xs text-muted-foreground">
-                  Defina o peso/volume da embalagem, o fator de conversão (densidade) e
-                  visualize o peso médio real registrado no estoque.
+                  Defina o peso/volume da embalagem e, opcionalmente, a equivalência KG ↔ L.
                 </p>
               </div>
 
@@ -786,76 +787,75 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                   : unitIsKg
                     ? "KG"
                     : unit.toUpperCase();
-                const stockUnitLabel = "KG";
-                const baseN = Number(standardWeight.replace(",", ".")) || 0;
-                const cfN = Number(conversionFactor.replace(",", ".")) || 0;
-                const resultN = baseN * cfN;
-                const fmt = (n: number) =>
-                  Number.isFinite(n) ? Number(n.toFixed(4)).toString() : "0";
+                const baseLow = baseUnitLabel === "L" ? "L" : "kg";
+                const altLow = baseUnitLabel === "L" ? "kg" : "L";
                 return (
                   <>
-                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-end">
-                        {/* Peso Base */}
-                        <div className="space-y-1.5">
-                          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                            Peso Base ({baseUnitLabel})
-                          </Label>
+                    {/* Peso Base */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        Peso Base ({baseUnitLabel})
+                      </Label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.001"
+                        min="0"
+                        value={standardWeight}
+                        onChange={(e) => setStandardWeight(e.target.value)}
+                        placeholder="Ex: 0,900"
+                        className="font-mono"
+                      />
+                    </div>
+
+                    {/* Fator de Conversão (toggle + equivalência fixa) */}
+                    <div
+                      className={cn(
+                        "rounded-md border p-3 transition-colors",
+                        conversionEnabled
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-border bg-muted/30",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-semibold">Fator de Conversão</Label>
+                          <p className="text-[11px] text-muted-foreground">
+                            Ative para vincular KG ↔ L (ex.: óleo, leite). Será carregado automaticamente nas próximas entradas manuais.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={conversionEnabled}
+                          onCheckedChange={setConversionEnabled}
+                          disabled={!effectiveSharedEnabled}
+                        />
+                      </div>
+                      {conversionEnabled && effectiveSharedEnabled && (
+                        <div className="mt-3 flex items-center gap-2 text-sm">
+                          <span className="tabular-nums text-muted-foreground">1 {baseLow} =</span>
                           <Input
                             type="number"
                             inputMode="decimal"
                             step="0.001"
                             min="0"
-                            value={standardWeight}
-                            onChange={(e) => setStandardWeight(e.target.value)}
-                            placeholder="Ex: 0,900"
-                            className="font-mono"
-                          />
-                        </div>
-
-                        <div className="hidden pb-2 text-center text-lg font-semibold text-muted-foreground sm:block">
-                          ×
-                        </div>
-
-                        {/* Fator de Conversão */}
-                        <div className="space-y-1.5">
-                          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                            Fator de Conversão
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.0001"
-                            min="0"
                             value={conversionFactor}
                             onChange={(e) => setConversionFactor(e.target.value)}
-                            placeholder="Ex: 0,92"
-                            className="font-mono"
+                            placeholder="1,000"
+                            className="h-9 w-28 text-center font-mono tabular-nums"
                           />
+                          <span className="tabular-nums text-muted-foreground">{altLow}</span>
                         </div>
-
-                        <div className="hidden pb-2 text-center text-lg font-semibold text-muted-foreground sm:block">
-                          =
-                        </div>
-
-                        {/* Resultado no Estoque */}
-                        <div className="space-y-1.5">
-                          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                            Resultado no Estoque ({stockUnitLabel})
-                          </Label>
-                          <div className="flex h-9 items-center justify-end rounded-md border border-primary/40 bg-background px-3 font-mono text-sm font-semibold text-primary">
-                            {fmt(resultN)}
-                          </div>
-                        </div>
-                      </div>
-                      <p className="mt-2 text-[11px] text-muted-foreground">
-                        Esta regra (Base × Fator) será aplicada automaticamente nas próximas
-                        entradas manuais e na conversão de notas fiscais.
-                      </p>
+                      )}
+                      {conversionEnabled && !effectiveSharedEnabled && (
+                        <p className="mt-2 text-[11px] text-amber-600">
+                          Disponível apenas para insumos com Unidade Compartilhada.
+                        </p>
+                      )}
                     </div>
 
+                    {/* Peso Médio Atual (informativo) */}
                     <div className="space-y-1.5">
-                      <Label>Peso do Lote Atual / Peso Médio (KG)</Label>
+                      <Label>Peso Médio Atual (KG)</Label>
                       <Input
                         type="number"
                         inputMode="decimal"
@@ -872,8 +872,7 @@ export function ItemEditDialog({ itemId, open, onClose }: Props) {
                         className="font-mono"
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Informativo. Mostra o peso real que o sistema está usando hoje para
-                        este estoque (atualizado automaticamente nas entradas).
+                        Informativo. Mostra o peso real que o sistema está usando hoje (atualizado automaticamente nas entradas).
                       </p>
                     </div>
                   </>
